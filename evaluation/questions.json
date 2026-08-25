@@ -1,0 +1,272 @@
+[
+  {
+    "id": "E01",
+    "difficulty": "easy",
+    "question": "What does Section 3(p) of the Patents Act say?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E02",
+    "difficulty": "easy",
+    "question": "What are not inventions under Section 3 of the Patents Act?",
+    "expected_section": "Section 3",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E03",
+    "difficulty": "easy",
+    "question": "What is the definition of patent under the Patents Act 1970?",
+    "expected_section": "Section 2",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E04",
+    "difficulty": "easy",
+    "question": "What does Section 3(d) of the Patents Act provide?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(d)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E05",
+    "difficulty": "easy",
+    "question": "What is a trademark under the Trade Marks Act 1999?",
+    "expected_section": "Section 2",
+    "expected_subsection": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark"
+  },
+  {
+    "id": "E06",
+    "difficulty": "easy",
+    "question": "What is copyright under the Copyright Act 1957?",
+    "expected_section": "Section 14",
+    "expected_subsection": null,
+    "expected_document_id": "copyright_act_1957",
+    "expected_domain": "copyright"
+  },
+  {
+    "id": "E07",
+    "difficulty": "easy",
+    "question": "What is the term of a patent in India?",
+    "expected_section": "Section 53",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E08",
+    "difficulty": "easy",
+    "question": "What does Section 3(b) of the Patents Act say?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(b)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "E09",
+    "difficulty": "easy",
+    "question": "What is a design under the Designs Act 2000?",
+    "expected_section": "Section 2",
+    "expected_subsection": null,
+    "expected_document_id": "designs_act_2000",
+    "expected_domain": "design"
+  },
+  {
+    "id": "E10",
+    "difficulty": "easy",
+    "question": "What constitutes a geographical indication under Indian law?",
+    "expected_section": "Section 2",
+    "expected_subsection": null,
+    "expected_document_id": "gi_act_1999",
+    "expected_domain": "gi"
+  },
+  {
+    "id": "M01",
+    "difficulty": "medium",
+    "question": "Can traditional knowledge be patented in India?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M02",
+    "difficulty": "medium",
+    "question": "What are the patentability requirements under Chapter II of the Patents Act?",
+    "expected_section": null,
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M03",
+    "difficulty": "medium",
+    "question": "How does Section 3(e) restrict patents related to substances obtained by mixing?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(e)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M04",
+    "difficulty": "medium",
+    "question": "What rights does a trademark owner have under the Trade Marks Act?",
+    "expected_section": "Section 28",
+    "expected_subsection": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark"
+  },
+  {
+    "id": "M05",
+    "difficulty": "medium",
+    "question": "What is the duration of copyright protection in India?",
+    "expected_section": "Section 22",
+    "expected_subsection": null,
+    "expected_document_id": "copyright_act_1957",
+    "expected_domain": "copyright"
+  },
+  {
+    "id": "M06",
+    "difficulty": "medium",
+    "question": "What procedure must be followed to apply for a patent in India?",
+    "expected_section": "Section 6",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M07",
+    "difficulty": "medium",
+    "question": "What makes a trademark well-known under Indian law?",
+    "expected_section": "Section 11",
+    "expected_subsection": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark"
+  },
+  {
+    "id": "M08",
+    "difficulty": "medium",
+    "question": "What are the grounds for revocation of a patent under the Patents Act?",
+    "expected_section": "Section 64",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M09",
+    "difficulty": "medium",
+    "question": "How does Section 3(i) affect patents on treatment methods in India?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(i)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "M10",
+    "difficulty": "medium",
+    "question": "What is compulsory licensing under Chapter XVI of the Patents Act?",
+    "expected_section": "Section 84",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D01",
+    "difficulty": "difficult",
+    "question": "Is a herbal formulation documented in traditional Ayurvedic texts patentable under Indian patent law?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D02",
+    "difficulty": "difficult",
+    "question": "How does the TKDL interact with the patentability exclusions in Section 3 of the Patents Act?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D03",
+    "difficulty": "difficult",
+    "question": "Can a new use of a known Ayurvedic plant be patented in India?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(d)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D04",
+    "difficulty": "difficult",
+    "question": "What legal protection does a GI tag provide compared to a trademark?",
+    "expected_section": null,
+    "expected_subsection": null,
+    "expected_document_id": "gi_act_1999",
+    "expected_domain": "gi"
+  },
+  {
+    "id": "D05",
+    "difficulty": "difficult",
+    "question": "Under what conditions can a patent be granted for a microorganism in India?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(j)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D06",
+    "difficulty": "difficult",
+    "question": "What is the difference between a patent application and a provisional specification?",
+    "expected_section": "Section 9",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D07",
+    "difficulty": "difficult",
+    "question": "How does Indian copyright law treat computer programs?",
+    "expected_section": "Section 2",
+    "expected_subsection": null,
+    "expected_document_id": "copyright_act_1957",
+    "expected_domain": "copyright"
+  },
+  {
+    "id": "D08",
+    "difficulty": "difficult",
+    "question": "Can an Ayurvedic product be registered as a trademark in India?",
+    "expected_section": "Section 9",
+    "expected_subsection": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark"
+  },
+  {
+    "id": "D09",
+    "difficulty": "difficult",
+    "question": "What international obligations affect the patentability of biological material in India?",
+    "expected_section": "Section 3",
+    "expected_subsection": "3(j)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "D10",
+    "difficulty": "difficult",
+    "question": "What are the prior art search requirements before filing a patent application in India?",
+    "expected_section": "Section 13",
+    "expected_subsection": null,
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  }
+]
