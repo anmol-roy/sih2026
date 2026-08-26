@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>IP-SAKTI Sahayak · Your Innovation. Your Knowledge. Your IP.</title>
+    <script src="https://cdn.tailwindcss.com">
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&family=Noto+Sans+Devanagari:wght@400;500;600&family=Noto+Sans+Kannada:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#0B1F3A',
+                        navyLight: '#152C4E',
+                        saffron: '#E07B39',
+                        saffronHover: '#C96A2C',
+                        green: '#1E6B4F',
+                        greenHover: '#16563E',
+                        warmwhite: '#FBF9F6',
+                        charcoal: '#1F2937',
+                        ink: '#111827',
+                        mist: '#F3F0EB',
+                        line: '#E5E0D8',
+                        muted: '#8B8277',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans Devanagari', 'Noto Sans Kannada', 'sans-serif'],
+                        indic: ['Noto Sans Devanagari', 'Noto Sans Kannada', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0,0,0,0.03)',
+                        'card': '0 2px 10px rgba(11,31,58,0.04), 0 1px 2px rgba(11,31,58,0.03)',
+                        'lift': '0 12px 30px rgba(11,31,58,0.08)',
+                        'focus': '0 0 0 3px rgba(224,123,57,0.15)',
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            -webkit-tap-highlight-color: transparent;
+            box-sizing: border-box;
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', 'Noto Sans Kannada', sans-serif;
+            background-color: #FBF9F6;
+            color: #1F2937;
+            min-height: 100vh;
+        }
+        .indic-font {
+            font-family: 'Noto Sans Devanagari', 'Noto Sans Kannada', sans-serif;
+        }
+        .card-hover {
+            transition: all 0.2s ease;
+        }
+        .card-hover:hover {
+            box-shadow: 0 12px 24px rgba(11,31,58,0.06);
+            border-color: #D1C9BD;
+            transform: translateY(-1px);
+        }
+        .btn-primary {
+            background-color: #0B1F3A;
+            color: white;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background-color: #152C4E;
+            box-shadow: 0 4px 12px rgba(11,31,58,0.15);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        .btn-secondary {
+            background-color: white;
+            color: #0B1F3A;
+            border: 1px solid #D8D0C5;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-secondary:hover {
+            background-color: #F3F0EB;
+            border-color: #C0B5A6;
+        }
+        .btn-saffron {
+            background-color: #E07B39;
+            color: white;
+            transition: all 0.2s;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-saffron:hover {
+            background-color: #C96A2C;
+            box-shadow: 0 4px 12px rgba(224,123,57,0.25);
+        }
+        .btn-green {
+            background-color: #1E6B4F;
+            color: white;
+            transition: all 0.2s;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-green:hover {
+            background-color: #16563E;
+        }
+        .btn-outline-navy {
+            background-color: transparent;
+            border: 1px solid #B8AE9F;
+            color: #0B1F3A;
+            transition: all 0.2s;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .btn-outline-navy:hover {
+            border-color: #0B1F3A;
+            background-color: #F8F5F0;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            white-space: nowrap;
+        }
+        .badge-primary {
+            background-color: #E8EFF6;
+            color: #0B1F3A;
+        }
+        .badge-saffron {
+            background-color: #FCEADD;
+            color: #B85C1F;
+        }
+        .badge-green {
+            background-color: #E0F0E8;
+            color: #1E6B4F;
+        }
+        .badge-red {
+            background-color: #FEE2E2;
+            color: #B91C1C;
+        }
+        .badge-yellow {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+        .badge-muted {
+            background-color: #EDE8E1;
+            color: #6B7280;
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #EDE8E1 25%, #F9F6F1 50%, #EDE8E1 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.8s infinite;
+            border-radius: 0.5rem;
+        }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-up {
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .expander {
+            transition: max-height 0.35s ease, opacity 0.25s;
+            overflow: hidden;
+        }
+        .focus-ring:focus-visible {
+            outline: 2px solid #E07B39;
+            outline-offset: 2px;
+            border-radius: 0.5rem;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-dot.green { background-color: #1E6B4F; }
+        .status-dot.yellow { background-color: #E07B39; }
+        .status-dot.red { background-color: #DC2626; }
+        .status-dot.blue { background-color: #0B1F3A; }
+
+        @media (max-width: 767px) {
+            .mobile-bottom-padding {
+                padding-bottom: 6rem;
+            }
+        }
+
+        /* Accessibility: reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Smooth scroll for main */
+        .main-scroll {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen bg-warmwhite">
+
+    <!-- ======================= DESKTOP SIDEBAR ======================= -->
+    <aside id="desktopSidebar" class="hidden lg:flex flex-col fixed left-0 top-0 h-screen w-72 bg-white border-r border-line shadow-sm z-50">
+        <div class="px-6 pt-7 pb-4 flex items-center gap-3 border-b border-line/60">
+            <div class="text-2xl">🇮🇳</div>
+            <div>
+                <div class="text-lg font-bold tracking-tight text-navy leading-none">IP-SAKTI</div>
+                <div class="text-xs text-charcoal/60 font-medium mt-0.5">Sahayak</div>
+            </div>
+        </div>
+        <nav class="flex-1 px-4 py-4 space-y-1 overflow-y-auto">
+            <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-charcoal/40 mt-2">Menu</p>
+            <a href="#" data-screen="homeScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-navy bg-mist hover:bg-warmwhite transition">
+                <span>🏠</span> Home
+            </a>
+            <a href="#" data-screen="askScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>💬</span> Ask Sahayak
+            </a>
+            <a href="#" data-screen="formulationScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>🧪</span> My Formulation
+            </a>
+            <a href="#" data-screen="analysisScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>🔍</span> Prior Art
+            </a>
+            <a href="#" data-screen="sourcesScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>📚</span> IP Knowledge
+            </a>
+
+            <div class="my-3 border-t border-line/50"></div>
+            <p class="px-3 text-[11px] font-semibold uppercase tracking-wider text-charcoal/40">Account</p>
+            <a href="#" data-screen="analysesScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>📋</span> My Analyses
+            </a>
+            <a href="#" data-screen="settingsScreen" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-charcoal/70 hover:bg-mist transition">
+                <span>⚙️</span> Settings
+            </a>
+        </nav>
+        <div class="px-5 py-4 border-t border-line/60 text-xs text-charcoal/50 flex gap-2 items-center">
+            <span>🔒</span> Private by design
+        </div>
+    </aside>
+
+    <!-- ======================= MOBILE TOP HEADER ======================= -->
+    <header class="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-line px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <span class="text-xl">🇮🇳</span>
+            <div>
+                <div class="font-bold text-navy leading-none text-base">IP-SAKTI</div>
+                <div class="text-[10px] text-charcoal/50 font-medium">Sahayak</div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2">
+            <button class="p-2 rounded-full hover:bg-mist focus-ring" aria-label="Select language" onclick="toggleLanguageMenu()">
+                🌐
+            </button>
+            <button class="p-2 rounded-full hover:bg-mist focus-ring" aria-label="Settings" onclick="showScreen('settingsScreen')">
+                ⚙️
+            </button>
+        </div>
+    </header>
+
+    <!-- ======================= LANGUAGE DROPDOWN (mobile) ======================= -->
+    <div id="languageMenu" class="hidden lg:hidden fixed top-14 right-4 z-50 bg-white rounded-xl shadow-lift border border-line p-2 w-40 fade-in">
+        <button class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium hover:bg-mist" onclick="selectLanguage('English')">English</button>
+        <button class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium hover:bg-mist indic-font" onclick="selectLanguage('हिंदी')">हिंदी</button>
+        <button class="w-full text-left px-3 py-2 rounded-lg text-sm font-medium hover:bg-mist indic-font" onclick="selectLanguage('ಕನ್ನಡ')">ಕನ್ನಡ</button>
+    </div>
+
+    <!-- ======================= MAIN CONTENT AREA ======================= -->
+    <div class="lg:pl-72 flex-1 w-full">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10 mobile-bottom-padding">
+
+            <!-- ============================================================ -->
+            <!-- ==================== HOME SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="homeScreen" class="screen-content fade-in">
+                <!-- Hero -->
+                <div class="bg-white rounded-2xl shadow-card p-8 md:p-12 mb-8 border border-line/60">
+                    <h1 class="text-3xl md:text-5xl font-bold text-navy tracking-tight leading-tight">Your Innovation.<br>Your Knowledge. Your IP.</h1>
+                    <p class="mt-4 text-charcoal/70 text-lg max-w-2xl leading-relaxed">Understand and protect your intellectual property with AI-assisted, source-grounded guidance.</p>
+                    <div class="mt-8 flex flex-col sm:flex-row gap-3">
+                        <button class="btn-primary px-7 py-3.5 rounded-xl text-base focus-ring" onclick="showScreen('askScreen')">Ask Sahayak →</button>
+                        <button class="btn-secondary px-7 py-3.5 rounded-xl text-base focus-ring" onclick="showScreen('sourcesScreen')">Explore IP Knowledge</button>
+                    </div>
+                </div>
+
+                <!-- Jurisdiction & Language selectors -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                    <div class="bg-white rounded-xl p-5 shadow-card border border-line/60">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-charcoal/50 mb-3">Jurisdiction</p>
+                        <div class="flex flex-wrap gap-2">
+                            <button class="btn-primary px-4 py-2 rounded-lg text-sm jurisdiction-btn active" data-jurisdiction="india" onclick="setJurisdiction('india', this)">
+                                🇮🇳 India
+                            </button>
+                            <button class="btn-secondary px-4 py-2 rounded-lg text-sm jurisdiction-btn" data-jurisdiction="international" onclick="setJurisdiction('international', this)">
+                                🌐 International
+                            </button>
+                            <button class="btn-outline-navy px-4 py-2 rounded-lg text-sm jurisdiction-btn" data-jurisdiction="compare" onclick="setJurisdiction('compare', this)">
+                                ⚖ Compare
+                            </button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl p-5 shadow-card border border-line/60">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-charcoal/50 mb-3">Language</p>
+                        <div class="relative inline-block w-full md:w-64">
+                            <select id="languageSelect" class="w-full appearance-none bg-mist/60 border border-line rounded-lg px-4 py-2.5 text-sm font-medium text-charcoal focus-ring cursor-pointer" onchange="updateLanguageDisplay(this.value)">
+                                <option value="English">English</option>
+                                <option value="हिंदी" class="indic-font">हिंदी</option>
+                                <option value="ಕನ್ನಡ" class="indic-font">ಕನ್ನಡ</option>
+                            </select>
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-charcoal/50">▼</span>
+                        </div>
+                        <p id="languageDisplay" class="text-xs text-charcoal/50 mt-2">Selected: English</p>
+                    </div>
+                </div>
+
+                <!-- What are you working on? -->
+                <div class="mb-10">
+                    <h2 class="text-xl font-semibold text-navy mb-4">What are you working on?</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('askScreen')" onkeydown="if(event.key==='Enter') showScreen('askScreen')">
+                            <div class="text-3xl mb-3">🧪</div>
+                            <h3 class="font-semibold text-navy">My Invention</h3>
+                            <p class="text-sm text-charcoal/60">Patentability & protection</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('analysisScreen')" onkeydown="if(event.key==='Enter') showScreen('analysisScreen')">
+                            <div class="text-3xl mb-3">🔍</div>
+                            <h3 class="font-semibold text-navy">Prior Art</h3>
+                            <p class="text-sm text-charcoal/60">Find potentially relevant inventions</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('formulationScreen')" onkeydown="if(event.key==='Enter') showScreen('formulationScreen')">
+                            <div class="text-3xl mb-3">🌿</div>
+                            <h3 class="font-semibold text-navy">Formulation</h3>
+                            <p class="text-sm text-charcoal/60">AYUSH, traditional knowledge & ABS</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('askScreen')" onkeydown="if(event.key==='Enter') showScreen('askScreen')">
+                            <div class="text-3xl mb-3">™️</div>
+                            <h3 class="font-semibold text-navy">Brand</h3>
+                            <p class="text-sm text-charcoal/60">Trademark guidance</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('askScreen')" onkeydown="if(event.key==='Enter') showScreen('askScreen')">
+                            <div class="text-3xl mb-3">🎨</div>
+                            <h3 class="font-semibold text-navy">Design</h3>
+                            <p class="text-sm text-charcoal/60">Protect product appearance</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-card border border-line/60 card-hover cursor-pointer focus-ring" tabindex="0" onclick="showScreen('askScreen')" onkeydown="if(event.key==='Enter') showScreen('askScreen')">
+                            <div class="text-3xl mb-3">📍</div>
+                            <h3 class="font-semibold text-navy">Regional Product</h3>
+                            <p class="text-sm text-charcoal/60">GI guidance</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust section -->
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-card border border-line/60 mb-6">
+                    <h3 class="text-lg font-semibold text-navy">Grounded in authoritative sources</h3>
+                    <p class="text-sm text-charcoal/60 mt-1">Sahayak uses evidence from official and recognized references.</p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <span class="badge badge-primary text-sm">📜 Official Laws</span>
+                        <span class="badge badge-saffron text-sm">🗂 Patent Records</span>
+                        <span class="badge badge-green text-sm">🌿 Traditional Knowledge</span>
+                        <span class="badge badge-primary text-sm">🌐 WIPO / International</span>
+                    </div>
+                </div>
+
+                <!-- Footer disclaimer -->
+                <p class="text-xs text-charcoal/50 leading-relaxed">Information provided by IP-SAKTI Sahayak is for general informational purposes only and does not constitute legal advice.</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== ASK SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="askScreen" class="screen-content hidden fade-in">
+                <div class="flex items-center gap-2 mb-1">
+                    <button class="text-navy font-medium text-sm hover:underline focus-ring" onclick="showScreen('homeScreen')">← Back</button>
+                </div>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">Ask Sahayak</h2>
+                <p class="text-charcoal/60 mt-1">Describe your invention, formulation, brand, design, or IP question.</p>
+
+                <!-- Jurisdiction & Language -->
+                <div class="flex flex-wrap gap-3 mt-4 mb-6 items-center">
+                    <button class="btn-primary px-4 py-2 rounded-lg text-sm jurisdiction-btn active" data-jurisdiction="india" onclick="setJurisdiction('india', this)">🇮🇳 India</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm jurisdiction-btn" data-jurisdiction="international" onclick="setJurisdiction('international', this)">🌐 International</button>
+                    <button class="btn-outline-navy px-4 py-2 rounded-lg text-sm jurisdiction-btn" data-jurisdiction="compare" onclick="setJurisdiction('compare', this)">⚖ Compare</button>
+                    <div class="relative inline-block ml-auto">
+                        <select id="askLanguageSelect" class="appearance-none bg-white border border-line rounded-lg px-4 py-2 text-sm focus-ring cursor-pointer">
+                            <option>English</option>
+                            <option class="indic-font">हिंदी</option>
+                            <option class="indic-font">ಕನ್ನಡ</option>
+                        </select>
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs">▼</span>
+                    </div>
+                </div>
+
+                <!-- Composer -->
+                <div class="bg-white rounded-2xl p-4 shadow-card border border-line/80 mb-6">
+                    <textarea id="askInput" rows="4" placeholder="Describe your invention, formulation, brand or IP question..." class="w-full resize-none bg-transparent outline-none text-charcoal text-base placeholder-charcoal/40 focus-ring p-2" aria-label="Ask a question"></textarea>
+                    <div class="flex items-center gap-2 mt-2 pt-2 border-t border-line/50">
+                        <button class="p-2 rounded-full hover:bg-mist text-charcoal/60 focus-ring" aria-label="Microphone" onclick="alert('Microphone input is not available in this demo.')">
+                            <span class="text-lg">🎤</span>
+                        </button>
+                        <button class="p-2 rounded-full hover:bg-mist text-charcoal/60 focus-ring" aria-label="Attachment" onclick="alert('Attachment upload is not available in this demo.')">
+                            <span class="text-lg">📎</span>
+                        </button>
+                        <button class="btn-primary px-6 py-2.5 rounded-xl ml-auto flex items-center gap-2 focus-ring" onclick="submitAsk()" aria-label="Send question">
+                            Send <span>→</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Try asking -->
+                <div class="mb-6">
+                    <p class="text-sm font-medium text-charcoal/60 mb-3">Try asking</p>
+                    <div class="flex gap-3 overflow-x-auto hide-scrollbar pb-2">
+                        <button class="bg-white border border-line rounded-full px-4 py-2 text-sm whitespace-nowrap card-hover focus-ring" onclick="setAskInput('Can I patent my herbal formulation?')">Can I patent my herbal formulation?</button>
+                        <button class="bg-white border border-line rounded-full px-4 py-2 text-sm whitespace-nowrap card-hover focus-ring" onclick="setAskInput('What does Section 3(p) mean?')">What does Section 3(p) mean?</button>
+                        <button class="bg-white border border-line rounded-full px-4 py-2 text-sm whitespace-nowrap card-hover focus-ring" onclick="setAskInput('How can I protect my brand?')">How can I protect my brand?</button>
+                        <button class="bg-white border border-line rounded-full px-4 py-2 text-sm whitespace-nowrap card-hover focus-ring" onclick="setAskInput('Does traditional knowledge affect my invention?')">Does traditional knowledge affect my invention?</button>
+                    </div>
+                </div>
+
+                <!-- IP Type selector -->
+                <div class="bg-mist/50 rounded-xl p-4 border border-line/60 mb-6">
+                    <p class="text-sm font-medium text-navy mb-2">What is this about?</p>
+                    <select id="ipTypeSelect" class="bg-white border border-line rounded-lg px-3 py-2 text-sm focus-ring cursor-pointer">
+                        <option value="auto">Auto detect</option>
+                        <option value="patent">Patent</option>
+                        <option value="trademark">Trademark</option>
+                        <option value="copyright">Copyright</option>
+                        <option value="design">Design</option>
+                        <option value="gi">GI</option>
+                        <option value="tk">Traditional Knowledge</option>
+                    </select>
+                    <p class="text-xs text-charcoal/50 mt-2">Sahayak can automatically identify the relevant IP area.</p>
+                </div>
+
+                <!-- Chat experience mock -->
+                <div id="chatMock" class="hidden mt-6 space-y-5 slide-up">
+                    <div class="flex justify-end">
+                        <div class="bg-navy text-white rounded-2xl rounded-tr-sm px-5 py-3 max-w-md text-sm leading-relaxed" id="userQuestionDisplay">Can I patent my herbal formulation?</div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60 max-w-3xl">
+                        <div class="flex items-center gap-2 mb-3 flex-wrap">
+                            <span class="badge badge-yellow">🟡 Preliminary</span>
+                            <span class="badge badge-saffron">Patent</span>
+                            <span class="badge badge-green">TK</span>
+                            <span class="badge badge-muted">🇮🇳 India</span>
+                        </div>
+                        <p class="text-charcoal/80 font-medium leading-relaxed">Your query involves potential patentability, traditional knowledge, and biological resources. A preliminary review is recommended.</p>
+                        <div class="mt-4 grid sm:grid-cols-3 gap-3 text-sm">
+                            <div class="bg-mist/40 p-3 rounded-lg border border-line/40">
+                                <span class="font-medium text-navy">📚 Prior Art:</span> 3 records found
+                            </div>
+                            <div class="bg-mist/40 p-3 rounded-lg border border-line/40">
+                                <span class="font-medium text-navy">🌿 TK:</span> possible
+                            </div>
+                            <div class="bg-mist/40 p-3 rounded-lg border border-line/40">
+                                <span class="font-medium text-navy">⚖️ Section 3(p)</span>
+                            </div>
+                        </div>
+                        <div class="mt-3 pt-3 border-t border-line/40 flex items-center justify-between">
+                            <span class="text-xs text-charcoal/50">*Preliminary, not legal advice.</span>
+                            <button class="text-navy text-sm font-medium hover:underline" onclick="showScreen('analysisScreen')">View full analysis →</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading state -->
+                <div id="askLoading" class="hidden mt-6 bg-white rounded-2xl p-6 shadow-card border border-line/60 slide-up">
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3 loading-step">
+                            <span class="w-3 h-3 rounded-full bg-saffron animate-pulse"></span>
+                            <p class="text-charcoal/80 font-medium">Understanding your question</p>
+                        </div>
+                        <div class="flex items-center gap-3 loading-step" style="animation-delay:0.3s">
+                            <span class="w-3 h-3 rounded-full bg-saffron animate-pulse"></span>
+                            <p class="text-charcoal/80 font-medium">Identifying relevant IP area</p>
+                        </div>
+                        <div class="flex items-center gap-3 loading-step" style="animation-delay:0.6s">
+                            <span class="w-3 h-3 rounded-full bg-saffron animate-pulse"></span>
+                            <p class="text-charcoal/80 font-medium">Searching authoritative sources</p>
+                        </div>
+                        <div class="flex items-center gap-3 loading-step" style="animation-delay:0.9s">
+                            <span class="w-3 h-3 rounded-full bg-saffron animate-pulse"></span>
+                            <p class="text-charcoal/80 font-medium">Preparing grounded guidance</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Low confidence state -->
+                <div id="lowConfidenceState" class="hidden mt-6 bg-white rounded-2xl p-6 shadow-card border border-red-200 slide-up">
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">🔴</span>
+                        <div>
+                            <p class="font-semibold text-navy">Limited evidence</p>
+                            <p class="text-charcoal/70 mt-1">I couldn't find sufficient authoritative evidence to answer this reliably.</p>
+                            <button class="btn-saffron mt-3 px-5 py-2.5 rounded-xl" onclick="showReviewModal()">Request IP Facilitator Review</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== ANALYSIS SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="analysisScreen" class="screen-content hidden fade-in">
+                <button class="flex items-center gap-2 text-navy font-medium text-sm mb-4 hover:underline focus-ring" onclick="showScreen('askScreen')">← Back</button>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">Analysis</h2>
+                <div class="flex flex-wrap gap-2 mt-3 mb-6 items-center">
+                    <span class="badge badge-primary">Patent</span>
+                    <span class="badge badge-green">Traditional Knowledge</span>
+                    <span class="badge badge-saffron">ABS</span>
+                    <span class="badge badge-muted ml-2">🇮🇳 India</span>
+                </div>
+
+                <div class="bg-white rounded-2xl p-6 md:p-8 shadow-card border border-line/60 mb-6">
+                    <p class="text-lg font-semibold text-navy leading-snug">"Can I patent my Ayurvedic formulation containing neem and turmeric?"</p>
+                </div>
+
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <!-- Left column -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Preliminary assessment -->
+                        <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                            <h3 class="text-lg font-semibold text-navy flex items-center gap-2">Preliminary assessment</h3>
+                            <div class="mt-3 flex items-start gap-3 bg-yellow-50/60 rounded-xl p-4 border border-yellow-100">
+                                <span class="text-2xl">🟡</span>
+                                <div>
+                                    <p class="text-charcoal/80 font-medium">Potential concerns identified</p>
+                                    <p class="text-sm text-charcoal/60 mt-1">Your query involves patentability, traditional knowledge and biological resources. Further assessment is recommended.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Analysis areas (accordions) -->
+                        <div class="space-y-4">
+                            <!-- Prior Art Accordion -->
+                            <div class="bg-white rounded-2xl shadow-card border border-line/60 overflow-hidden">
+                                <button class="w-full flex items-center justify-between p-5 focus-ring" onclick="toggleAccordion('accordion1', this)" aria-expanded="false">
+                                    <span class="flex items-center gap-3">
+                                        <span>🔍</span>
+                                        <span class="font-semibold text-navy">Prior Art</span>
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs badge badge-primary">6 records</span>
+                                        <span class="accordion-icon text-charcoal/50">▾</span>
+                                    </span>
+                                </button>
+                                <div id="accordion1" class="expander max-h-0 px-5 pb-4">
+                                    <div class="grid gap-3 pt-2">
+                                        <div class="border border-line/60 rounded-xl p-4 card-hover">
+                                            <div class="flex justify-between items-start">
+                                                <span class="font-medium text-navy">IN201811034567</span>
+                                                <span class="badge badge-yellow">82% similar</span>
+                                            </div>
+                                            <p class="text-sm text-charcoal/60 mt-1">Relevant features: neem extract, turmeric, anti-inflammatory</p>
+                                            <button class="text-sm text-navy font-medium mt-2 hover:underline" onclick="showEvidenceModal('IN201811034567', 'Neem-based composition for skin disorders', '82% similar')">View evidence →</button>
+                                        </div>
+                                        <div class="border border-line/60 rounded-xl p-4 card-hover">
+                                            <div class="flex justify-between items-start">
+                                                <span class="font-medium text-navy">IN201711012345</span>
+                                                <span class="badge badge-primary">67% similar</span>
+                                            </div>
+                                            <p class="text-sm text-charcoal/60 mt-1">Ayurvedic composition for skin disorders</p>
+                                            <button class="text-sm text-navy font-medium mt-2 hover:underline" onclick="showEvidenceModal('IN201711012345', 'Herbal composition for skin care', '67% similar')">View evidence →</button>
+                                        </div>
+                                        <div class="border border-line/60 rounded-xl p-4 card-hover">
+                                            <div class="flex justify-between items-start">
+                                                <span class="font-medium text-navy">IN201911009876</span>
+                                                <span class="badge badge-yellow">75% similar</span>
+                                            </div>
+                                            <p class="text-sm text-charcoal/60 mt-1">Herbal formulation for inflammation</p>
+                                            <button class="text-sm text-navy font-medium mt-2 hover:underline" onclick="showEvidenceModal('IN201911009876', 'Turmeric based anti-inflammatory composition', '75% similar')">View evidence →</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Traditional Knowledge Accordion -->
+                            <div class="bg-white rounded-2xl shadow-card border border-line/60 overflow-hidden">
+                                <button class="w-full flex items-center justify-between p-5 focus-ring" onclick="toggleAccordion('accordion2', this)" aria-expanded="false">
+                                    <span class="flex items-center gap-3">
+                                        <span>🌿</span>
+                                        <span class="font-semibold text-navy">Traditional Knowledge</span>
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs badge badge-green">related evidence</span>
+                                        <span class="accordion-icon text-charcoal/50">▾</span>
+                                    </span>
+                                </button>
+                                <div id="accordion2" class="expander max-h-0 px-5 pb-4">
+                                    <div class="space-y-3 pt-2">
+                                        <div class="border border-green-100 rounded-xl p-4 bg-green-50/40">
+                                            <p class="text-sm text-charcoal/70">Potential traditional knowledge relationship detected. Evidence found linking neem and turmeric to traditional anti-inflammatory use.</p>
+                                            <div class="mt-3 text-sm">
+                                                <div class="flex gap-2 items-center"><span class="badge badge-green">Source</span> Traditional Knowledge Digital Library</div>
+                                                <div class="flex gap-2 items-center mt-1"><span class="badge badge-green">Ingredient</span> Neem, Turmeric</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Relevant Law Accordion -->
+                            <div class="bg-white rounded-2xl shadow-card border border-line/60 overflow-hidden">
+                                <button class="w-full flex items-center justify-between p-5 focus-ring" onclick="toggleAccordion('accordion3', this)" aria-expanded="false">
+                                    <span class="flex items-center gap-3">
+                                        <span>⚖️</span>
+                                        <span class="font-semibold text-navy">Relevant Law</span>
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs badge badge-primary">3 provisions</span>
+                                        <span class="accordion-icon text-charcoal/50">▾</span>
+                                    </span>
+                                </button>
+                                <div id="accordion3" class="expander max-h-0 px-5 pb-4">
+                                    <div class="space-y-3 pt-2">
+                                        <div class="border border-line/60 rounded-xl p-4">
+                                            <p class="font-medium text-navy">Patents Act, 1970 · Section 3(p)</p>
+                                            <p class="text-sm text-charcoal/60 mt-1">"An invention which, in effect, is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components."</p>
+                                        </div>
+                                        <div class="border border-line/60 rounded-xl p-4">
+                                            <p class="font-medium text-navy">Patents Act, 1970 · Section 3(j)</p>
+                                            <p class="text-sm text-charcoal/60 mt-1">Plants and animals in whole or any part thereof are not patentable.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- ABS Accordion -->
+                            <div class="bg-white rounded-2xl shadow-card border border-line/60 overflow-hidden">
+                                <button class="w-full flex items-center justify-between p-5 focus-ring" onclick="toggleAccordion('accordion4', this)" aria-expanded="false">
+                                    <span class="flex items-center gap-3">
+                                        <span>🌱</span>
+                                        <span class="font-semibold text-navy">ABS</span>
+                                    </span>
+                                    <span class="flex items-center gap-2">
+                                        <span class="text-xs badge badge-saffron">potential</span>
+                                        <span class="accordion-icon text-charcoal/50">▾</span>
+                                    </span>
+                                </button>
+                                <div id="accordion4" class="expander max-h-0 px-5 pb-4">
+                                    <p class="text-sm text-charcoal/70 pt-2">Potential relevance detected due to biological resources. Further assessment may be needed depending on applicable requirements.</p>
+                                    <div class="mt-2 text-sm flex items-center gap-2"><span class="badge badge-saffron">🟡</span> Further assessment recommended</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Confidence card -->
+                        <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                            <h3 class="text-lg font-semibold text-navy">Confidence</h3>
+                            <div class="mt-2 flex items-center gap-2">
+                                <span class="text-2xl">🟡</span>
+                                <span class="font-medium text-navy">Moderate confidence</span>
+                            </div>
+                            <p class="text-sm text-charcoal/60 mt-2">Relevant authoritative evidence was found, but some uncertainty remains.</p>
+                            <p class="text-xs text-charcoal/50 mt-3">Confidence reflects the quality and consistency of retrieved evidence, not the likelihood of a legal outcome.</p>
+                        </div>
+                    </div>
+
+                    <!-- Right column -->
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                            <h3 class="font-semibold text-navy mb-3">Sources consulted</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center gap-2"><span class="badge badge-primary">PRIMARY</span> Patents Act, 1970 · S.3(p)</div>
+                                <div class="flex items-center gap-2"><span class="badge badge-saffron">REGISTRY</span> IN201811034567</div>
+                                <div class="flex items-center gap-2"><span class="badge badge-green">TK</span> Traditional Knowledge Digital Library</div>
+                            </div>
+                        </div>
+                        <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                            <h3 class="font-semibold text-navy">How this answer was generated</h3>
+                            <button class="text-sm text-navy font-medium mt-2 hover:underline" onclick="toggleAccordion('generationSteps', this)">Show steps ▾</button>
+                            <div id="generationSteps" class="expander max-h-0 mt-3">
+                                <div class="space-y-2 text-sm text-charcoal/70">
+                                    <p>User question</p>
+                                    <p class="text-saffron font-medium">↓</p>
+                                    <p>Patent identified</p>
+                                    <p>India jurisdiction</p>
+                                    <p>Formulation detected</p>
+                                    <p>Patent search</p>
+                                    <p>Traditional knowledge search</p>
+                                    <p>Legal source search</p>
+                                    <p>Evidence comparison</p>
+                                    <p class="font-semibold text-navy">Answer</p>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="w-full btn-saffron py-3.5 rounded-xl focus-ring" onclick="showReviewModal()">Request IP Facilitator Review</button>
+                    </div>
+                </div>
+
+                <p class="mt-8 text-xs text-charcoal/50 leading-relaxed">Information provided by IP-SAKTI Sahayak is for general informational purposes only and does not constitute legal advice.</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== FORMULATION SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="formulationScreen" class="screen-content hidden fade-in">
+                <button class="flex items-center gap-2 text-navy font-medium text-sm mb-4 hover:underline focus-ring" onclick="showScreen('homeScreen')">← Back</button>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">Formulation Analysis</h2>
+                <p class="text-charcoal/60 mt-1">Understand how your formulation may relate to patents, traditional knowledge and biological-resource considerations.</p>
+
+                <div class="bg-white rounded-2xl p-6 shadow-card border border-line/80 mt-6 mb-4">
+                    <p class="font-medium text-navy text-lg">Tell us about your formulation</p>
+                    <textarea id="formulationInput" rows="4" placeholder="Add ingredients, preparation method, traditional use, or other relevant details..." class="w-full mt-3 resize-none bg-transparent outline-none border border-line rounded-xl p-4 text-charcoal placeholder-charcoal/40 focus-ring" aria-label="Formulation details"></textarea>
+                    <div class="flex items-center gap-2 mt-2">
+                        <button class="p-2 rounded-full hover:bg-mist text-charcoal/60 focus-ring" aria-label="Attachment" onclick="alert('Attachment upload is not available in this demo.')">📎</button>
+                        <button class="p-2 rounded-full hover:bg-mist text-charcoal/60 focus-ring" aria-label="Microphone" onclick="alert('Microphone input is not available in this demo.')">🎤</button>
+                        <button class="btn-primary px-6 py-2.5 rounded-xl ml-auto focus-ring" onclick="runFormulationAnalysis()">Analyze</button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <span class="text-sm text-charcoal/50 mr-2">Example:</span>
+                    <button class="text-sm text-navy font-medium underline underline-offset-2 hover:underline focus-ring" onclick="setFormulationInput('Neem and turmeric based Ayurvedic formulation for skin inflammation.')">Use example</button>
+                </div>
+
+                <!-- Formulation loading -->
+                <div id="formulationLoading" class="hidden bg-white rounded-2xl p-6 shadow-card border border-line/60 mb-6 slide-up">
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green animate-pulse"></span><p class="text-charcoal/70">Identifying ingredients</p></div>
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green animate-pulse" style="animation-delay:0.3s"></span><p class="text-charcoal/70">Checking biological resources</p></div>
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green animate-pulse" style="animation-delay:0.6s"></span><p class="text-charcoal/70">Searching traditional knowledge</p></div>
+                        <div class="flex items-center gap-3"><span class="w-3 h-3 rounded-full bg-green animate-pulse" style="animation-delay:0.9s"></span><p class="text-charcoal/70">Preparing analysis</p></div>
+                    </div>
+                </div>
+
+                <!-- Formulation Result -->
+                <div id="formulationResult" class="hidden space-y-6 slide-up">
+                    <!-- Formulation Profile -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <p class="text-sm font-semibold uppercase text-charcoal/50 tracking-wide">Formulation profile</p>
+                        <div class="mt-3 flex flex-wrap gap-3 items-center">
+                            <span class="badge badge-green text-sm">🟢 Ayurveda</span>
+                            <span class="badge badge-primary text-sm">🌿 Neem</span>
+                            <span class="badge badge-primary text-sm">🌿 Turmeric</span>
+                            <span class="badge badge-primary text-sm">🌿 Ashwagandha</span>
+                            <span class="badge badge-saffron text-sm">3 biological resources</span>
+                            <span class="badge badge-yellow text-sm">2 TK indicators</span>
+                        </div>
+                    </div>
+
+                    <!-- IP Considerations -->
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <div class="bg-white rounded-xl p-5 shadow-card border border-line/60 card-hover">
+                            <div class="flex items-start justify-between">
+                                <span class="text-2xl">⚖️</span>
+                                <span class="badge badge-yellow">🟡 Review recommended</span>
+                            </div>
+                            <h3 class="font-semibold text-navy mt-2">Patent</h3>
+                            <p class="text-sm text-charcoal/60 mt-1">Potential concerns with prior art and traditional knowledge.</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-5 shadow-card border border-line/60 card-hover">
+                            <div class="flex items-start justify-between">
+                                <span class="text-2xl">🌿</span>
+                                <span class="badge badge-green">🟡 Related evidence found</span>
+                            </div>
+                            <h3 class="font-semibold text-navy mt-2">Traditional Knowledge</h3>
+                            <p class="text-sm text-charcoal/60 mt-1">Evidence found linking ingredients to traditional use.</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-5 shadow-card border border-line/60 card-hover">
+                            <div class="flex items-start justify-between">
+                                <span class="text-2xl">🌱</span>
+                                <span class="badge badge-saffron">🟡 Potential relevance</span>
+                            </div>
+                            <h3 class="font-semibold text-navy mt-2">ABS</h3>
+                            <p class="text-sm text-charcoal/60 mt-1">Biological resources identified. Further assessment may be needed.</p>
+                        </div>
+                    </div>
+
+                    <!-- TK Section -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Traditional Knowledge</h3>
+                        <p class="text-sm text-charcoal/60 mt-1">Potentially related traditional knowledge was identified.</p>
+                        <div class="mt-4 space-y-3">
+                            <div class="border border-green-100 rounded-xl p-4 bg-green-50/30 flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium text-navy text-sm">Neem (Azadirachta indica)</p>
+                                    <p class="text-xs text-charcoal/50">Traditional Knowledge Digital Library</p>
+                                    <p class="text-sm text-charcoal/60 mt-1">Used traditionally for skin inflammation.</p>
+                                </div>
+                                <button class="text-sm text-green font-medium hover:underline whitespace-nowrap" onclick="showEvidenceModal('TKDL-Neem', 'Traditional use of Neem for skin conditions', 'High relevance')">View evidence →</button>
+                            </div>
+                            <div class="border border-green-100 rounded-xl p-4 bg-green-50/30 flex justify-between items-start">
+                                <div>
+                                    <p class="font-medium text-navy text-sm">Turmeric (Curcuma longa)</p>
+                                    <p class="text-xs text-charcoal/50">Traditional Knowledge Digital Library</p>
+                                    <p class="text-sm text-charcoal/60 mt-1">Used traditionally for wound healing and inflammation.</p>
+                                </div>
+                                <button class="text-sm text-green font-medium hover:underline whitespace-nowrap" onclick="showEvidenceModal('TKDL-Turmeric', 'Traditional use of Turmeric for skin disorders', 'High relevance')">View evidence →</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ABS Section -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Potential ABS relevance</h3>
+                        <p class="text-sm text-charcoal/60 mt-1">Biological resources were identified. Further assessment may be required depending on the applicable requirements and circumstances.</p>
+                        <div class="mt-3 flex items-center gap-2">
+                            <span class="badge badge-saffron">🟡 Further assessment recommended</span>
+                        </div>
+                    </div>
+
+                    <!-- Prior Art -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Potentially relevant prior art</h3>
+                        <div class="grid sm:grid-cols-3 gap-3 mt-4 text-sm">
+                            <div class="border border-line/60 rounded-xl p-4">
+                                <p class="font-medium text-navy">IN201811034567</p>
+                                <p class="text-xs text-charcoal/50 mt-1">Neem-based composition</p>
+                                <span class="badge badge-yellow mt-2">82% similar</span>
+                            </div>
+                            <div class="border border-line/60 rounded-xl p-4">
+                                <p class="font-medium text-navy">IN201711012345</p>
+                                <p class="text-xs text-charcoal/50 mt-1">Ayurvedic composition</p>
+                                <span class="badge badge-primary mt-2">67% similar</span>
+                            </div>
+                            <div class="border border-line/60 rounded-xl p-4">
+                                <p class="font-medium text-navy">IN201911009876</p>
+                                <p class="text-xs text-charcoal/50 mt-1">Herbal anti-inflammatory</p>
+                                <span class="badge badge-yellow mt-2">75% similar</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Next step -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h3 class="font-semibold text-navy text-lg">Need professional review?</h3>
+                            <p class="text-sm text-charcoal/60">Connect with an IP facilitator for expert assistance.</p>
+                        </div>
+                        <button class="btn-saffron px-6 py-3 rounded-xl focus-ring" onclick="showReviewModal()">Request IP Facilitator Review</button>
+                    </div>
+                </div>
+
+                <p class="mt-8 text-xs text-charcoal/50 leading-relaxed">Information provided by IP-SAKTI Sahayak is for general informational purposes only and does not constitute legal advice.</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== SOURCES & EVIDENCE ======================= -->
+            <!-- ============================================================ -->
+            <section id="sourcesScreen" class="screen-content hidden fade-in">
+                <button class="flex items-center gap-2 text-navy font-medium text-sm mb-4 hover:underline focus-ring" onclick="showScreen('homeScreen')">← Back</button>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">Sources & Evidence</h2>
+                <p class="text-charcoal/60 mt-1">Explore the authoritative material used to support Sahayak's responses.</p>
+
+                <!-- Filters -->
+                <div class="flex gap-2 flex-wrap mt-4 mb-6">
+                    <button class="btn-primary px-4 py-2 rounded-lg text-sm source-filter active" data-filter="all" onclick="filterSources('all', this)">All</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm source-filter" data-filter="indian-law" onclick="filterSources('indian-law', this)">Indian Law</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm source-filter" data-filter="patent-records" onclick="filterSources('patent-records', this)">Patent Records</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm source-filter" data-filter="tk" onclick="filterSources('tk', this)">Traditional Knowledge</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm source-filter" data-filter="international" onclick="filterSources('international', this)">International</button>
+                    <button class="btn-secondary px-4 py-2 rounded-lg text-sm source-filter" data-filter="government" onclick="filterSources('government', this)">Government</button>
+                </div>
+
+                <!-- Sources list -->
+                <div id="sourcesList" class="space-y-4">
+                    <!-- Source 1: Indian Law -->
+                    <div class="source-card bg-white rounded-2xl p-5 shadow-card border border-line/60 card-hover" data-category="indian-law government">
+                        <span class="badge badge-primary">PRIMARY SOURCE</span>
+                        <h3 class="font-semibold text-navy text-lg mt-2">Patents Act, 1970</h3>
+                        <p class="text-sm text-charcoal/60">Section 3(p) · Official Government of India</p>
+                        <p class="mt-2 text-sm text-charcoal/70 leading-relaxed">"An invention which, in effect, is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components."</p>
+                        <div class="mt-3 flex gap-2 items-center">
+                            <span class="badge badge-muted">Government</span>
+                            <button class="text-navy text-sm font-medium hover:underline ml-auto" onclick="showSourceDetailModal('Patents Act, 1970', 'Section 3(p)', 'Government of India', 'Traditional knowledge exclusion')">View source →</button>
+                        </div>
+                    </div>
+
+                    <!-- Source 2: Patent Records -->
+                    <div class="source-card bg-white rounded-2xl p-5 shadow-card border border-line/60 card-hover" data-category="patent-records">
+                        <span class="badge badge-saffron">REGISTRY</span>
+                        <h3 class="font-semibold text-navy text-lg mt-2">IN201811034567</h3>
+                        <p class="text-sm text-charcoal/60">Neem-based composition · Indian Patent Office</p>
+                        <p class="mt-2 text-sm text-charcoal/70">Describes a composition comprising neem extract for skin disorders.</p>
+                        <div class="mt-3 flex gap-2 items-center">
+                            <span class="badge badge-muted">Patent Record</span>
+                            <button class="text-navy text-sm font-medium hover:underline ml-auto" onclick="showSourceDetailModal('IN201811034567', 'Neem-based composition', 'Indian Patent Office', 'Prior art reference')">View source →</button>
+                        </div>
+                    </div>
+
+                    <!-- Source 3: Traditional Knowledge -->
+                    <div class="source-card bg-white rounded-2xl p-5 shadow-card border border-line/60 card-hover" data-category="tk government">
+                        <span class="badge badge-green">TRADITIONAL KNOWLEDGE</span>
+                        <h3 class="font-semibold text-navy text-lg mt-2">Traditional Knowledge Digital Library</h3>
+                        <p class="text-sm text-charcoal/60">Neem (Azadirachta indica) · Record TKDL-Neem-01</p>
+                        <p class="mt-2 text-sm text-charcoal/70">Documents traditional use of Neem for anti-inflammatory and skin healing properties.</p>
+                        <div class="mt-3 flex gap-2 items-center">
+                            <span class="badge badge-muted">Government</span>
+                            <button class="text-navy text-sm font-medium hover:underline ml-auto" onclick="showSourceDetailModal('TKDL', 'Neem traditional use', 'CSIR', 'Traditional knowledge evidence')">View source →</button>
+                        </div>
+                    </div>
+
+                    <!-- Source 4: International -->
+                    <div class="source-card bg-white rounded-2xl p-5 shadow-card border border-line/60 card-hover" data-category="international">
+                        <span class="badge badge-primary">WIPO</span>
+                        <h3 class="font-semibold text-navy text-lg mt-2">WIPO Traditional Knowledge Documentation</h3>
+                        <p class="text-sm text-charcoal/60">WIPO/GRTKF/IC/27</p>
+                        <p class="mt-2 text-sm text-charcoal/70">International framework for traditional knowledge protection.</p>
+                        <div class="mt-3 flex gap-2 items-center">
+                            <span class="badge badge-muted">International</span>
+                            <button class="text-navy text-sm font-medium hover:underline ml-auto" onclick="showSourceDetailModal('WIPO', 'TK Documentation', 'WIPO', 'International reference')">View source →</button>
+                        </div>
+                    </div>
+
+                    <!-- Source 5: Government -->
+                    <div class="source-card bg-white rounded-2xl p-5 shadow-card border border-line/60 card-hover" data-category="indian-law government">
+                        <span class="badge badge-primary">PRIMARY SOURCE</span>
+                        <h3 class="font-semibold text-navy text-lg mt-2">Biological Diversity Act, 2002</h3>
+                        <p class="text-sm text-charcoal/60">Section 3 · Government of India</p>
+                        <p class="mt-2 text-sm text-charcoal/70">Regulates access to biological resources for research and commercial utilization.</p>
+                        <div class="mt-3 flex gap-2 items-center">
+                            <span class="badge badge-muted">Government</span>
+                            <button class="text-navy text-sm font-medium hover:underline ml-auto" onclick="showSourceDetailModal('Biological Diversity Act, 2002', 'Section 3', 'Government of India', 'ABS regulation')">View source →</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Empty state for sources -->
+                <div id="sourcesEmpty" class="hidden text-center py-12">
+                    <p class="text-charcoal/60">No supporting sources were found for this filter.</p>
+                </div>
+
+                <p class="mt-8 text-xs text-charcoal/50 leading-relaxed">Information provided by IP-SAKTI Sahayak is for general informational purposes only and does not constitute legal advice.</p>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== MY ANALYSES SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="analysesScreen" class="screen-content hidden fade-in">
+                <button class="flex items-center gap-2 text-navy font-medium text-sm mb-4 hover:underline focus-ring" onclick="showScreen('homeScreen')">← Back</button>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">My Analyses</h2>
+                <p class="text-charcoal/60 mt-1">Your saved analyses and previous queries.</p>
+                <div class="mt-8">
+                    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-line">
+                        <div class="text-4xl mb-3">📭</div>
+                        <p class="text-lg font-medium text-navy">You haven't created an analysis yet.</p>
+                        <p class="text-charcoal/60 mt-1">Start your first analysis to get IP guidance.</p>
+                        <button class="btn-primary mt-5 px-6 py-3 rounded-xl focus-ring" onclick="showScreen('askScreen')">Start an analysis</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============================================================ -->
+            <!-- ==================== SETTINGS SCREEN ======================= -->
+            <!-- ============================================================ -->
+            <section id="settingsScreen" class="screen-content hidden fade-in">
+                <button class="flex items-center gap-2 text-navy font-medium text-sm mb-4 hover:underline focus-ring" onclick="showScreen('homeScreen')">← Back</button>
+                <h2 class="text-2xl md:text-3xl font-bold text-navy">Settings</h2>
+                <p class="text-charcoal/60 mt-1">Manage your preferences and privacy.</p>
+
+                <div class="mt-8 space-y-6 max-w-2xl">
+                    <!-- Privacy panel -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Privacy</h3>
+                        <p class="text-sm text-charcoal/60 mt-1">Your invention details may contain sensitive information.</p>
+                        <div class="mt-4 space-y-3">
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" checked class="w-4 h-4 accent-saffron">
+                                <span class="text-sm text-charcoal/80">Private analysis</span>
+                            </label>
+                            <label class="flex items-center gap-3 cursor-pointer">
+                                <input type="checkbox" class="w-4 h-4 accent-saffron">
+                                <span class="text-sm text-charcoal/80">Do not store question content</span>
+                            </label>
+                            <div class="flex items-center justify-between pt-3 border-t border-line/40">
+                                <span class="text-sm text-charcoal/60">Delete all analyses</span>
+                                <button class="btn-secondary px-4 py-2 rounded-lg text-sm" onclick="alert('All analyses deleted (demo).')">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Language preference -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Language</h3>
+                        <p class="text-sm text-charcoal/60 mt-1">Preferred language for the interface and responses.</p>
+                        <select class="mt-3 bg-white border border-line rounded-lg px-4 py-2.5 text-sm w-full md:w-64 focus-ring cursor-pointer" onchange="updateLanguageDisplay(this.value)">
+                            <option>English</option>
+                            <option>हिंदी</option>
+                            <option>ಕನ್ನಡ</option>
+                        </select>
+                    </div>
+
+                    <!-- Jurisdiction preference -->
+                    <div class="bg-white rounded-2xl p-6 shadow-card border border-line/60">
+                        <h3 class="font-semibold text-navy text-lg">Default jurisdiction</h3>
+                        <p class="text-sm text-charcoal/60 mt-1">Used when starting a new analysis.</p>
+                        <div class="flex gap-2 mt-3">
+                            <button class="btn-primary px-4 py-2 rounded-lg text-sm">🇮🇳 India</button>
+                            <button class="btn-secondary px-4 py-2 rounded-lg text-sm">🌐 International</button>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="mt-8 text-xs text-charcoal/50 leading-relaxed">Information provided by IP-SAKTI Sahayak is for general informational purposes only and does not constitute legal advice.</p>
+            </section>
+
+        </div>
+    </div>
+
+    <!-- ======================= MOBILE BOTTOM NAVIGATION ======================= -->
+    <nav class="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-line z-40 flex justify-around items-center py-2 px-1 text-xs text-charcoal/70 shadow-lift" aria-label="Bottom navigation">
+        <button class="flex flex-col items-center gap-1 p-2 font-medium nav-btn active" data-screen="homeScreen" onclick="showScreen('homeScreen')">
+            <span class="text-lg">🏠</span>Home
+        </button>
+        <button class="flex flex-col items-center gap-1 p-2 nav-btn" data-screen="askScreen" onclick="showScreen('askScreen')">
+            <span class="text-lg">💬</span>Ask
+        </button>
+        <button class="flex flex-col items-center gap-1 p-2 nav-btn" data-screen="analysisScreen" onclick="showScreen('analysisScreen')">
+            <span class="text-lg">🔬</span>Analyse
+        </button>
+        <button class="flex flex-col items-center gap-1 p-2 nav-btn" data-screen="sourcesScreen" onclick="showScreen('sourcesScreen')">
+            <span class="text-lg">📚</span>Sources
+        </button>
+        <button class="flex flex-col items-center gap-1 p-2 nav-btn" data-screen="settingsScreen" onclick="showScreen('settingsScreen')">
+            <span class="text-lg">⋯</span>More
+        </button>
+    </nav>
+
+    <!-- ======================= MODAL: EVIDENCE ======================= -->
+    <div id="evidenceModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-lift max-w-lg w-full p-6 slide-up max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-semibold text-navy" id="evidenceModalTitle">Evidence</h3>
+                <button class="p-1 rounded-full hover:bg-mist text-2xl leading-none text-charcoal/50" onclick="closeModal('evidenceModal')" aria-label="Close">×</button>
+            </div>
+            <div class="mt-4 space-y-3 text-sm">
+                <div><span class="font-medium text-navy">Source:</span> <span id="evidenceModalSource" class="text-charcoal/70"></span></div>
+                <div><span class="font-medium text-navy">Description:</span> <span id="evidenceModalDesc" class="text-charcoal/70"></span></div>
+                <div><span class="font-medium text-navy">Relevance:</span> <span id="evidenceModalRelevance" class="text-charcoal/70"></span></div>
+            </div>
+            <button class="btn-secondary w-full mt-5 py-2.5 rounded-xl" onclick="closeModal('evidenceModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- ======================= MODAL: SOURCE DETAIL ======================= -->
+    <div id="sourceDetailModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-lift max-w-lg w-full p-6 slide-up max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-semibold text-navy">Source detail</h3>
+                <button class="p-1 rounded-full hover:bg-mist text-2xl leading-none text-charcoal/50" onclick="closeModal('sourceDetailModal')" aria-label="Close">×</button>
+            </div>
+            <div class="mt-4 space-y-3 text-sm">
+                <div><span class="font-medium text-navy">Title:</span> <span id="sourceDetailTitle" class="text-charcoal/70"></span></div>
+                <div><span class="font-medium text-navy">Section/ID:</span> <span id="sourceDetailSection" class="text-charcoal/70"></span></div>
+                <div><span class="font-medium text-navy">Authority:</span> <span id="sourceDetailAuthority" class="text-charcoal/70"></span></div>
+                <div><span class="font-medium text-navy">Why used:</span> <span id="sourceDetailWhy" class="text-charcoal/70"></span></div>
+                <div class="mt-3 p-3 bg-mist/40 rounded-lg">
+                    <p class="text-xs font-semibold text-charcoal/50 uppercase">Relevant passage</p>
+                    <p class="text-charcoal/70 mt-1 italic" id="sourceDetailExcerpt">"Excerpt from source."</p>
+                </div>
+            </div>
+            <button class="btn-secondary w-full mt-5 py-2.5 rounded-xl" onclick="closeModal('sourceDetailModal')">Close</button>
+        </div>
+    </div>
+
+    <!-- ======================= MODAL: REVIEW REQUEST ======================= -->
+    <div id="reviewModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-lift max-w-lg w-full p-6 slide-up max-h-[80vh] overflow-y-auto">
+            <div class="flex justify-between items-start">
+                <h3 class="text-lg font-semibold text-navy">Need expert assistance?</h3>
+                <button class="p-1 rounded-full hover:bg-mist text-2xl leading-none text-charcoal/50" onclick="closeModal('reviewModal')" aria-label="Close">×</button>
+            </div>
+            <p class="text-sm text-charcoal/60 mt-2">The available evidence may not be sufficient for a reliable answer. You can request review by an IP facilitator.</p>
+            <div class="mt-4 space-y-3">
+                <div>
+                    <label class="text-xs font-semibold text-charcoal/60">Reason for review</label>
+                    <textarea id="reviewReason" rows="3" class="w-full mt-1 border border-line rounded-xl p-3 text-sm focus-ring" placeholder="Describe your concern or question..."></textarea>
+                </div>
+                <div>
+                    <label class="text-xs font-semibold text-charcoal/60">Related analysis</label>
+                    <input id="reviewAnalysis" class="w-full mt-1 border border-line rounded-xl p-3 text-sm focus-ring" value="Can I patent my Ayurvedic formulation containing neem and turmeric?" readonly>
+                </div>
+            </div>
+            <button class="btn-saffron w-full mt-5 py-3 rounded-xl" onclick="submitReviewRequest()">Submit for Review</button>
+            <div id="reviewSuccess" class="hidden mt-4 p-4 bg-green-50 border border-green-100 rounded-xl text-center">
+                <p class="font-medium text-green">✓ Review request submitted</p>
+                <p class="text-sm text-charcoal/60 mt-1">Request ID: <span id="reviewRequestId" class="font-mono">IP-2024-0001</span></p>
+                <p class="text-xs text-charcoal/50 mt-1">Status: Pending review</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======================= JAVASCRIPT ======================= -->
+    <script>
+        // ======================= SCREEN NAVIGATION =======================
+        const screens = ['homeScreen', 'askScreen', 'analysisScreen', 'formulationScreen', 'sourcesScreen', 'analysesScreen', 'settingsScreen'];
+
+        function showScreen(screenId) {
+            // Hide all screens
+            screens.forEach(s => {
+                const el = document.getElementById(s);
+                if (el) el.classList.add('hidden');
+            });
+            // Show target
+            const target = document.getElementById(screenId);
+            if (target) {
+                target.classList.remove('hidden');
+                target.classList.add('fade-in');
+                // Remove fade-in after animation
+                setTimeout(() => target.classList.remove('fade-in'), 350);
+            }
+            // Update sidebar active state
+            document.querySelectorAll('.sidebar-link').forEach(link => {
+                link.classList.remove('bg-mist', 'text-navy');
+                link.classList.add('text-charcoal/70');
+                if (link.dataset.screen === screenId) {
+                    link.classList.add('bg-mist', 'text-navy');
+                    link.classList.remove('text-charcoal/70');
+                }
+            });
+            // Update bottom nav active
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-navy', 'font-semibold');
+                if (btn.dataset.screen === screenId) {
+                    btn.classList.add('text-navy', 'font-semibold');
+                }
+            });
+            // Close mobile language menu
+            document.getElementById('languageMenu')?.classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        window.showScreen = showScreen;
+
+        // Sidebar link navigation
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                showScreen(link.dataset.screen);
+            });
+        });
+
+        // ======================= JURISDICTION =======================
+        let currentJurisdiction = 'india';
+
+        function setJurisdiction(jurisdiction, btn) {
+            currentJurisdiction = jurisdiction;
+            // Update all jurisdiction buttons
+            document.querySelectorAll('.jurisdiction-btn').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-secondary');
+                b.classList.remove('text-white');
+                if (b.dataset.jurisdiction === jurisdiction) {
+                    b.classList.remove('btn-secondary');
+                    b.classList.add('btn-primary');
+                    b.classList.add('text-white');
+                }
+            });
+        }
+        window.setJurisdiction = setJurisdiction;
+
+        // ======================= LANGUAGE =======================
+        let currentLanguage = 'English';
+
+        function updateLanguageDisplay(lang) {
+            currentLanguage = lang;
+            const display = document.getElementById('languageDisplay');
+            if (display) display.textContent = 'Selected: ' + lang;
+            // Also update ask screen select
+            const askSelect = document.getElementById('askLanguageSelect');
+            if (askSelect) askSelect.value = lang;
+        }
+        window.updateLanguageDisplay = updateLanguageDisplay;
+
+        function toggleLanguageMenu() {
+            const menu = document.getElementById('languageMenu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+        window.toggleLanguageMenu = toggleLanguageMenu;
+
+        function selectLanguage(lang) {
+            updateLanguageDisplay(lang);
+            const select = document.getElementById('languageSelect');
+            if (select) select.value = lang;
+            const askSelect = document.getElementById('askLanguageSelect');
+            if (askSelect) askSelect.value = lang;
+            toggleLanguageMenu();
+        }
+        window.selectLanguage = selectLanguage;
+
+        // ======================= ASK SCREEN FUNCTIONS =======================
+        function setAskInput(text) {
+            const input = document.getElementById('askInput');
+            if (input) {
+                input.value = text;
+                input.focus();
+            }
+        }
+        window.setAskInput = setAskInput;
+
+        function submitAsk() {
+            const input = document.getElementById('askInput');
+            if (!input || !input.value.trim()) {
+                alert('Please enter a question first.');
+                return;
+            }
+            const question = input.value.trim();
+            const chatMock = document.getElementById('chatMock');
+            const askLoading = document.getElementById('askLoading');
+            const lowConfidence = document.getElementById('lowConfidenceState');
+
+            // Update user question display
+            document.getElementById('userQuestionDisplay').textContent = question;
+
+            // Show loading
+            askLoading.classList.remove('hidden');
+            chatMock.classList.add('hidden');
+            lowConfidence.classList.add('hidden');
+
+            // Simulate loading sequence
+            setTimeout(() => {
+                askLoading.classList.add('hidden');
+                // Check if we should show low confidence (simple heuristic)
+                if (question.toLowerCase().includes('what does') && question.toLowerCase().includes('section')) {
+                    lowConfidence.classList.remove('hidden');
+                    chatMock.classList.add('hidden');
+                } else {
+                    chatMock.classList.remove('hidden');
+                    lowConfidence.classList.add('hidden');
+                }
+            }, 3200);
+        }
+        window.submitAsk = submitAsk;
+
+        // ======================= ACCORDION =======================
+        function toggleAccordion(id, btn) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const icon = btn?.querySelector('.accordion-icon');
+            if (el.classList.contains('max-h-0')) {
+                el.classList.remove('max-h-0');
+                el.style.maxHeight = el.scrollHeight + 'px';
+                if (icon) icon.textContent = '▴';
+                btn?.setAttribute('aria-expanded', 'true');
+            } else {
+                el.style.maxHeight = '0px';
+                el.classList.add('max-h-0');
+                if (icon) icon.textContent = '▾';
+                btn?.setAttribute('aria-expanded', 'false');
+            }
+        }
+        window.toggleAccordion = toggleAccordion;
+
+        // ======================= FORMULATION =======================
+        function setFormulationInput(text) {
+            const input = document.getElementById('formulationInput');
+            if (input) {
+                input.value = text;
+                input.focus();
+            }
+        }
+        window.setFormulationInput = setFormulationInput;
+
+        function runFormulationAnalysis() {
+            const input = document.getElementById('formulationInput');
+            if (!input || !input.value.trim()) {
+                alert('Please describe your formulation first.');
+                return;
+            }
+            const loading = document.getElementById('formulationLoading');
+            const result = document.getElementById('formulationResult');
+            loading.classList.remove('hidden');
+            result.classList.add('hidden');
+            setTimeout(() => {
+                loading.classList.add('hidden');
+                result.classList.remove('hidden');
+                result.classList.add('slide-up');
+                result.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 2800);
+        }
+        window.runFormulationAnalysis = runFormulationAnalysis;
+
+        // ======================= SOURCES FILTER =======================
+        function filterSources(filter, btn) {
+            document.querySelectorAll('.source-filter').forEach(b => {
+                b.classList.remove('btn-primary');
+                b.classList.add('btn-secondary');
+            });
+            btn.classList.remove('btn-secondary');
+            btn.classList.add('btn-primary');
+            const cards = document.querySelectorAll('.source-card');
+            let visible = 0;
+            cards.forEach(card => {
+                if (filter === 'all' || card.dataset.category.includes(filter)) {
+                    card.classList.remove('hidden');
+                    visible++;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+            const empty = document.getElementById('sourcesEmpty');
+            if (empty) empty.classList.toggle('hidden', visible > 0);
+        }
+        window.filterSources = filterSources;
+
+        // ======================= MODALS =======================
+        function closeModal(id) {
+            document.getElementById(id)?.classList.add('hidden');
+        }
+        window.closeModal = closeModal;
+
+        function showEvidenceModal(source, desc, relevance) {
+            document.getElementById('evidenceModalSource').textContent = source;
+            document.getElementById('evidenceModalDesc').textContent = desc;
+            document.getElementById('evidenceModalRelevance').textContent = relevance;
+            document.getElementById('evidenceModal').classList.remove('hidden');
+        }
+        window.showEvidenceModal = showEvidenceModal;
+
+        function showSourceDetailModal(title, section, authority, why) {
+            document.getElementById('sourceDetailTitle').textContent = title;
+            document.getElementById('sourceDetailSection').textContent = section;
+            document.getElementById('sourceDetailAuthority').textContent = authority;
+            document.getElementById('sourceDetailWhy').textContent = why;
+            const excerpts = {
+                'Patents Act, 1970': 'An invention which, in effect, is traditional knowledge or which is an aggregation or duplication of known properties of traditionally known component or components is not patentable.',
+                'IN201811034567': 'A composition comprising neem extract and turmeric powder for treating skin inflammation.',
+                'TKDL': 'Neem leaves have been traditionally used for anti-inflammatory and skin healing purposes.',
+                'Biological Diversity Act, 2002': 'No person shall access biological resources for research or commercial utilization without approval.',
+                'WIPO': 'Traditional knowledge should be protected and respected in the intellectual property system.'
+            };
+            document.getElementById('sourceDetailExcerpt').textContent = excerpts[title] || 'Excerpt from source.';
+            document.getElementById('sourceDetailModal').classList.remove('hidden');
+        }
+        window.showSourceDetailModal = showSourceDetailModal;
+
+        function showReviewModal() {
+            document.getElementById('reviewModal').classList.remove('hidden');
+            document.getElementById('reviewSuccess').classList.add('hidden');
+        }
+        window.showReviewModal = showReviewModal;
+
+        function submitReviewRequest() {
+            const reason = document.getElementById('reviewReason');
+            if (reason && !reason.value.trim()) {
+                alert('Please provide a reason for review.');
+                return;
+            }
+            const success = document.getElementById('reviewSuccess');
+            success.classList.remove('hidden');
+            document.getElementById('reviewRequestId').textContent = 'IP-' + Date.now().toString().slice(-6);
+        }
+        window.submitReviewRequest = submitReviewRequest;
+
+        // ======================= PRIVACY / SETTINGS =======================
+        window.showEmptyState = () => showScreen('analysesScreen');
+        window.showErrorState = () => {
+            // Simple simulation: show a toast-like alert
+            alert('We couldn\'t complete this analysis right now. Your information hasn\'t been lost. Please try again.');
+        };
+
+        // ======================= INITIALIZATION =======================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Ensure all screens except home are hidden
+            screens.forEach(s => {
+                if (s !== 'homeScreen') {
+                    const el = document.getElementById(s);
+                    if (el) el.classList.add('hidden');
+                }
+            });
+            // Set default jurisdiction active buttons
+            document.querySelectorAll('.jurisdiction-btn').forEach(b => {
+                if (b.dataset.jurisdiction === 'india') {
+                    b.classList.add('btn-primary');
+                    b.classList.remove('btn-secondary');
+                }
+            });
+            // Set default source filter active
+            document.querySelectorAll('.source-filter').forEach(b => {
+                if (b.dataset.filter === 'all') {
+                    b.classList.add('btn-primary');
+                    b.classList.remove('btn-secondary');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

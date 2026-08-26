@@ -1,15 +1,16 @@
 """
-IP-SAKTI Sahayak — Phase 5 API
+IP-SAKTI Sahayak — Phase 6 API
 ────────────────────────────────
 Endpoints
 ─────────
-GET  /                        health check
-GET  /health                  health check
+GET  /                          health check
+GET  /health                    health check
 
-POST /query                   Phase 2 — legal Q&A with section citations
-POST /analyze-invention       Phase 3 — invention + legal/patent/TK report
-POST /patentability-check     Phase 4 — feature-level prior-art + patentability report
-POST /ask                     Phase 5 — unified routed Q&A (auto IP-type detection)
+POST /query                     Phase 2 — legal Q&A with section citations
+POST /analyze-invention         Phase 3 — invention + legal/patent/TK report
+POST /patentability-check       Phase 4 — feature-level prior-art + patentability report
+POST /ask                       Phase 5 — unified routed Q&A (auto IP-type detection)
+POST /jurisdictional-query      Phase 6 — India vs international jurisdiction-split answers
 
 Run with:
     uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
