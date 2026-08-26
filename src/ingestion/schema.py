@@ -37,6 +37,7 @@ class LegalChunk(BaseModel):
     version: Optional[str] = None
     effective_date: Optional[str] = None
     last_verified: str = "2026-08-25"
+    jurisdiction: str = "india"            # "india" | "international"
     text: str
 
     def to_metadata(self) -> dict:
