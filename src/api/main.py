@@ -1,5 +1,5 @@
 """
-IP-SAKTI Sahayak — Phase 4 API
+IP-SAKTI Sahayak — Phase 5 API
 ────────────────────────────────
 Endpoints
 ─────────
@@ -9,6 +9,7 @@ GET  /health                  health check
 POST /query                   Phase 2 — legal Q&A with section citations
 POST /analyze-invention       Phase 3 — invention + legal/patent/TK report
 POST /patentability-check     Phase 4 — feature-level prior-art + patentability report
+POST /ask                     Phase 5 — unified routed Q&A (auto IP-type detection)
 
 Run with:
     uvicorn src.api.main:app --reload --host 0.0.0.0 --port 8000
@@ -43,6 +44,9 @@ from patents.prior_art_search import PriorArtSearcher, generate_prior_art_querie
 from patents.patent_matcher import PatentMatcher
 from tk.tk_matcher import TKMatcher
 from generation.report_generator import ReportGenerator
+from routing.ip_router import IPRouter
+from routing.orchestrator import QueryOrchestrator
+from formulation.classifier import FormulationClassifier
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -52,8 +56,8 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = FastAPI(
     title="IP-SAKTI Sahayak",
-    description="Indian IP legal RAG + Invention analysis + Patentability check",
-    version="4.0.0",
+    description="Indian IP legal RAG + Invention analysis + Patentability check + Routed Q&A",
+    version="5.0.0",
 )
 
 app.add_middleware(
@@ -80,6 +84,7 @@ _tk_matcher    : Optional[TKMatcher]             = None
 _reporter      : Optional[ReportGenerator]       = None
 _novelty_az    : Optional[NoveltyAnalyzer]       = None
 _invstep_az    : Optional[InventiveStepAnalyzer] = None
+_orchestrator  : Optional[QueryOrchestrator]     = None
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
@@ -185,6 +190,16 @@ def _get_invstep_az() -> InventiveStepAnalyzer:
     if _invstep_az is None:
         _invstep_az = InventiveStepAnalyzer()
     return _invstep_az
+
+
+def _get_orchestrator() -> QueryOrchestrator:
+    global _orchestrator
+    if _orchestrator is None:
+        _orchestrator = QueryOrchestrator(
+            embeddings=_get_embeddings(),
+            llm=_get_llm(),
+        )
+    return _orchestrator
 
 
 # ─────────────────────────────────────────────────────────────────────────────
