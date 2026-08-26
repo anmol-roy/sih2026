@@ -594,7 +594,7 @@ def _handle_patentability(
 
 @app.get("/", tags=["health"])
 def root():
-    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "4.0.0"}
+    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "5.0.0"}
 
 
 @app.get("/health", tags=["health"])
@@ -645,3 +645,109 @@ def patentability_check(req: PatentabilityRequest):
     if not req.description.strip():
         raise HTTPException(status_code=400, detail="description must not be empty")
     return _handle_patentability(req.description.strip(), req.cutoff_date)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 5 — Unified routed Q&A
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AskRequest(BaseModel):
+    query: str
+
+
+class FormulationOut(BaseModel):
+    formulation_type                : str
+    secondary_types                 : list[str]
+    ingredients                     : list[str]
+    biological_resources            : list[str]
+    traditional_knowledge_indicators: list[str]
+    tk_systems                      : list[str]
+    confidence                      : float
+    notes                           : Optional[str] = None
+
+
+class AskCitationOut(BaseModel):
+    document   : str
+    chapter    : Optional[str] = None
+    section    : Optional[str] = None
+    subsection : Optional[str] = None
+    page       : Optional[int] = None
+    source     : str
+    source_url : Optional[str] = None
+    domain     : Optional[str] = None
+    chunk_id   : str
+
+
+class AskResponse(BaseModel):
+    query        : str
+    ip_types     : list[str]
+    primary_ip   : str
+    router_reason: str
+    formulation  : Optional[FormulationOut] = None
+    answer       : str
+    confidence   : str
+    sufficient   : bool
+    citations    : list[AskCitationOut]
+    domains_used : list[str]
+    query_type   : str
+
+
+@app.post("/ask", response_model=AskResponse, tags=["phase-5"])
+def ask(req: AskRequest):
+    """
+    Phase 5 — Unified routed Q&A.
+
+    Automatically detects the IP domain(s) relevant to the query,
+    classifies formulations when present, retrieves domain-filtered
+    evidence, and generates an answer with a domain-specific prompt.
+
+    Supports:
+      - Single-domain queries (patent, trademark, copyright, design, GI, TK)
+      - Multi-domain queries (e.g. patent + trademark, patent + TK)
+      - Formulation classification and TK detection
+    """
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+
+    result = _get_orchestrator().process(req.query.strip())
+
+    formulation_out = None
+    if result.get("formulation"):
+        f = result["formulation"]
+        formulation_out = FormulationOut(
+            formulation_type                = f.get("formulation_type", "unknown"),
+            secondary_types                 = f.get("secondary_types", []),
+            ingredients                     = f.get("ingredients", []),
+            biological_resources            = f.get("biological_resources", []),
+            traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
+            tk_systems                      = f.get("tk_systems", []),
+            confidence                      = f.get("confidence", 0.0),
+            notes                           = f.get("notes"),
+        )
+
+    return AskResponse(
+        query         = result["query"],
+        ip_types      = result["ip_types"],
+        primary_ip    = result["primary_ip"],
+        router_reason = result.get("router_reason", ""),
+        formulation   = formulation_out,
+        answer        = result["answer"],
+        confidence    = result["confidence"],
+        sufficient    = result["sufficient"],
+        citations     = [
+            AskCitationOut(
+                document   = c["document"],
+                chapter    = c.get("chapter"),
+                section    = c.get("section"),
+                subsection = c.get("subsection"),
+                page       = c.get("page"),
+                source     = c["source"],
+                source_url = c.get("source_url"),
+                domain     = c.get("domain"),
+                chunk_id   = c["chunk_id"],
+            )
+            for c in result.get("citations", [])
+        ],
+        domains_used  = result.get("domains_used", []),
+        query_type    = result.get("query_type", "semantic"),
+    )

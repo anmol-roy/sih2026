@@ -73,8 +73,8 @@ _USER = "User query: {query}\n\nJSON:"
 # ─────────────────────────────────────────────────────────────────────────────
 
 _KEYWORD_RULES: list[tuple[re.Pattern, IPType]] = [
-    (re.compile(r"\bpatent\b|patentab|inventive\s+step|prior\s+art|novelty|Section\s+3|invent", re.I), IPType.PATENT),
-    (re.compile(r"\btrademark\b|trade\s*mark|brand\s*name|logo|slogan|passing\s+off|mark\s+register", re.I), IPType.TRADEMARK),
+    (re.compile(r"\bpatent\b|patentab|inventive\s+step|prior\s+art|novelty|Section\s+3|\bpatented\b|invent(?:ion|or)", re.I), IPType.PATENT),
+    (re.compile(r"\btrademark\b|trade\s*mark|brand\s*name|\blogo\b|slogan|passing\s+off|mark\s+register|\bregister\s+(?:a\s+)?(?:brand|name|mark)\b", re.I), IPType.TRADEMARK),
     (re.compile(r"\bcopyright\b|copy\s*right|authorship|moral\s+right|literary|artistic\s+work|software\s+right", re.I), IPType.COPYRIGHT),
     (re.compile(r"\bdesign\b|shape\s+of|appearance\s+of|ornamental|visual\s+feature|design\s+register", re.I), IPType.DESIGN),
     (re.compile(r"\bgeograph|\bgi\b|geographical\s+indication|darjeeling|basmati|region\s+product", re.I), IPType.GI),
@@ -83,9 +83,10 @@ _KEYWORD_RULES: list[tuple[re.Pattern, IPType]] = [
 
 
 def _keyword_classify(query: str) -> list[IPType]:
+    """Return ALL matching IP types — never stops at first match."""
     found: list[IPType] = []
     for pattern, ip_type in _KEYWORD_RULES:
-        if pattern.search(query):
+        if pattern.search(query) and ip_type not in found:
             found.append(ip_type)
     return found or [IPType.UNKNOWN]
 
