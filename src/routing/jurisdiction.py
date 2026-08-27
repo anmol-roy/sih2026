@@ -81,7 +81,7 @@ _INTL_RE = re.compile(
     Madrid\s*(?:Protocol|System) |  # Madrid System
     Berne\s*Convention           |  # Berne Convention
     Hague\s*(?:Agreement|System) |  # Hague System
-    international\s*(?:patent|trademark|copyright|treaty|agreement|IP|filing) |
+    international\s*(?:patent|trademark|copyright|treaty|agreement|IP|filing|geographical) |
     \bUNCTAD\b                   |
     \bEPO\b                      |  # EPO
     \bUSPTO\b                    |  # USPTO
@@ -109,14 +109,14 @@ _BOTH_RE = re.compile(
 def _keyword_classify(query: str) -> JurisdictionRoute:
     """
     Fast keyword-based jurisdiction classification.
-    Returns a JurisdictionRoute with confidence ≤ 0.75
-    (LLM can override if needed).
+    Returns a JurisdictionRoute with confidence ≤ 0.85.
     """
     has_india = bool(_INDIA_RE.search(query))
     has_intl  = bool(_INTL_RE.search(query))
     has_both  = bool(_BOTH_RE.search(query))
 
-    if has_both and (has_india or has_intl):
+    # "both" only fires when the comparison is genuinely between India AND international
+    if has_both and has_india and has_intl:
         return JurisdictionRoute(
             jurisdiction=Jurisdiction.BOTH,
             confidence=0.80,
@@ -141,7 +141,7 @@ def _keyword_classify(query: str) -> JurisdictionRoute:
             reason="Query contains WIPO / PCT / TRIPS / Paris Convention keywords.",
         )
 
-    # No strong signal — default to India (most queries are India-specific)
+    # No strong signal — default to India
     return JurisdictionRoute(
         jurisdiction=Jurisdiction.INDIA,
         confidence=0.50,
