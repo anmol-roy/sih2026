@@ -25,7 +25,7 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
 from langchain_core.documents import Document
 from qdrant_client import QdrantClient
-from qdrant_client.models import Filter, FieldCondition, MatchValue, Must
+from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from retrieval.retriever import HybridRetriever, _confidence, _SUFFICIENCY_THRESHOLD

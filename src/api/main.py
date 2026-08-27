@@ -57,8 +57,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = FastAPI(
     title="IP-SAKTI Sahayak",
-    description="Indian IP legal RAG + Invention analysis + Patentability check + Routed Q&A",
-    version="5.0.0",
+    description=(
+        "Indian IP legal RAG + Invention analysis + "
+        "Patentability check + Routed Q&A + Jurisdiction layer"
+    ),
+    version="6.0.0",
 )
 
 app.add_middleware(
@@ -595,7 +598,7 @@ def _handle_patentability(
 
 @app.get("/", tags=["health"])
 def root():
-    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "5.0.0"}
+    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "6.0.0"}
 
 
 @app.get("/health", tags=["health"])
@@ -751,4 +754,147 @@ def ask(req: AskRequest):
         ],
         domains_used  = result.get("domains_used", []),
         query_type    = result.get("query_type", "semantic"),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 6 — Jurisdictional Q&A  (India vs International, kept separate)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class JurisdictionalRequest(BaseModel):
+    query        : str
+    jurisdiction : Optional[str] = None   # "india" | "international" | "both"
+    ip_type      : Optional[str] = None   # "patent" | "trademark" | …
+
+
+class JurCitationOut(BaseModel):
+    document    : str
+    chapter     : Optional[str] = None
+    section     : Optional[str] = None
+    subsection  : Optional[str] = None
+    page        : Optional[int] = None
+    source      : str
+    source_url  : Optional[str] = None
+    domain      : Optional[str] = None
+    jurisdiction: Optional[str] = None
+    chunk_id    : str
+
+
+class JurAnswerSet(BaseModel):
+    """One jurisdiction's answer, citations, and confidence."""
+    answer    : str
+    citations : list[JurCitationOut]
+    confidence: str
+    sufficient: bool
+
+
+class JurisdictionalResponse(BaseModel):
+    """
+    Phase 6 response.
+
+    When jurisdiction = "india"         : india is populated, international is None.
+    When jurisdiction = "international" : international is populated, india is None.
+    When jurisdiction = "both"          : both are populated + comparison is set.
+    """
+    query           : str
+    ip_types        : list[str]
+    primary_ip      : str
+    jurisdiction    : str             # "india" | "international" | "both"
+    jur_confidence  : float
+    jur_reason      : str
+    formulation     : Optional[FormulationOut] = None
+    india           : Optional[JurAnswerSet]   = None
+    international   : Optional[JurAnswerSet]   = None
+    comparison      : Optional[str]            = None
+
+
+def _to_jur_citations(raw: list[dict]) -> list[JurCitationOut]:
+    return [
+        JurCitationOut(
+            document    = c["document"],
+            chapter     = c.get("chapter"),
+            section     = c.get("section"),
+            subsection  = c.get("subsection"),
+            page        = c.get("page"),
+            source      = c["source"],
+            source_url  = c.get("source_url"),
+            domain      = c.get("domain"),
+            jurisdiction= c.get("jurisdiction"),
+            chunk_id    = c["chunk_id"],
+        )
+        for c in raw
+    ]
+
+
+def _to_jur_answer_set(raw: Optional[dict]) -> Optional[JurAnswerSet]:
+    if raw is None:
+        return None
+    return JurAnswerSet(
+        answer    = raw["answer"],
+        citations = _to_jur_citations(raw.get("citations", [])),
+        confidence= raw["confidence"],
+        sufficient= raw["sufficient"],
+    )
+
+
+@app.post("/jurisdictional-query", response_model=JurisdictionalResponse, tags=["phase-6"])
+def jurisdictional_query(req: JurisdictionalRequest):
+    """
+    Phase 6 — India vs International jurisdiction-split Q&A.
+
+    Automatically detects jurisdiction from the query, or use the
+    `jurisdiction` field to override: "india", "international", or "both".
+
+    Returns two SEPARATE answer sets — India evidence never mixes with
+    international evidence. When `jurisdiction = "both"` a comparison
+    paragraph is also returned.
+
+    Example requests:
+
+    1. Auto-detect:
+       { "query": "What does Section 3(p) say about traditional knowledge?" }
+       → india answer only (Section 3(p) is Indian law)
+
+    2. International explicit:
+       { "query": "What is the PCT?", "jurisdiction": "international" }
+       → international answer only
+
+    3. Comparison:
+       { "query": "Compare Indian patent law with TRIPS", "jurisdiction": "both" }
+       → india answer + international answer + comparison paragraph
+    """
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+
+    result = _get_orchestrator().process_jurisdictional(
+        query                 = req.query.strip(),
+        jurisdiction_override = req.jurisdiction,
+        ip_type_override      = req.ip_type,
+    )
+
+    formulation_out = None
+    if result.get("formulation"):
+        f = result["formulation"]
+        formulation_out = FormulationOut(
+            formulation_type                = f.get("formulation_type", "unknown"),
+            secondary_types                 = f.get("secondary_types", []),
+            ingredients                     = f.get("ingredients", []),
+            biological_resources            = f.get("biological_resources", []),
+            traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
+            tk_systems                      = f.get("tk_systems", []),
+            confidence                      = f.get("confidence", 0.0),
+            notes                           = f.get("notes"),
+        )
+
+    return JurisdictionalResponse(
+        query         = result["query"],
+        ip_types      = result["ip_types"],
+        primary_ip    = result["primary_ip"],
+        jurisdiction  = result["jurisdiction"],
+        jur_confidence= result.get("jur_confidence", 0.0),
+        jur_reason    = result.get("jur_reason", ""),
+        formulation   = formulation_out,
+        india         = _to_jur_answer_set(result.get("india")),
+        international = _to_jur_answer_set(result.get("international")),
+        comparison    = result.get("comparison"),
     )

@@ -1,0 +1,338 @@
+{
+  "summary": {
+    "total": 30,
+    "jurisdiction_accuracy": 1.0
+  },
+  "cases": [
+    {
+      "case_id": "JUR001",
+      "category": "india_only",
+      "query": "What does Section 3(p) of the Patents Act say about traditional knowle",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR002",
+      "category": "india_only",
+      "query": "What are the grounds for refusal of trademark registration in India?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR003",
+      "category": "india_only",
+      "query": "How does IP India process a patent application?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR004",
+      "category": "india_only",
+      "query": "What is the term of copyright protection under the Copyright Act 1957?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR005",
+      "category": "india_only",
+      "query": "How is a geographical indication registered under Indian law?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR006",
+      "category": "india_only",
+      "query": "What does the TKDL say about Ayurvedic formulations?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR007",
+      "category": "india_only",
+      "query": "What are the requirements for design registration under the Designs Ac",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR008",
+      "category": "india_only",
+      "query": "What does Section 3(d) of the Patents Act say about pharmaceutical pat",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR009",
+      "category": "india_only",
+      "query": "How does AYUSH regulate traditional medicine formulations in India?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR010",
+      "category": "india_only",
+      "query": "What is compulsory licensing under the Indian Patents Act?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR011",
+      "category": "international_only",
+      "query": "What is the Patent Cooperation Treaty (PCT)?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR012",
+      "category": "international_only",
+      "query": "What does the TRIPS Agreement say about patent protection?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR013",
+      "category": "international_only",
+      "query": "How does the Paris Convention define the right of priority?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR014",
+      "category": "international_only",
+      "query": "What is the Madrid System for international trademark registration?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR015",
+      "category": "international_only",
+      "query": "What does the Berne Convention say about moral rights?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR016",
+      "category": "international_only",
+      "query": "How do I file a PCT international patent application with WIPO?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR017",
+      "category": "international_only",
+      "query": "What are the minimum standards required by TRIPS for copyright protect",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR018",
+      "category": "international_only",
+      "query": "How does the Hague System work for international design protection?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR019",
+      "category": "international_only",
+      "query": "What is the WIPO definition of intellectual property?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR020",
+      "category": "international_only",
+      "query": "What obligations does TRIPS impose on member countries for patent prot",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR021",
+      "category": "both",
+      "query": "How do Indian patentability requirements compare with the PCT and TRIP",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 0.8,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR022",
+      "category": "both",
+      "query": "Compare India's copyright term with the Berne Convention minimum.",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 0.8,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR023",
+      "category": "both",
+      "query": "How does Indian trademark law differ from the Madrid System?",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 0.8,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR024",
+      "category": "both",
+      "query": "Is India's compulsory licensing provision consistent with TRIPS Articl",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 0.8,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR025",
+      "category": "both",
+      "query": "How does India's traditional knowledge protection interact with intern",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 0.8,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR026",
+      "category": "override_india",
+      "query": "What are the patentability requirements?",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 1.0,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR027",
+      "category": "override_international",
+      "query": "What are the patentability requirements?",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 1.0,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR028",
+      "category": "override_both",
+      "query": "What are the patentability requirements?",
+      "expected_jurisdiction": "both",
+      "got_jurisdiction": "both",
+      "jur_correct": true,
+      "confidence": 1.0,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR029",
+      "category": "india_only",
+      "query": "What is the procedure for filing a patent application at the Indian Pa",
+      "expected_jurisdiction": "india",
+      "got_jurisdiction": "india",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    },
+    {
+      "case_id": "JUR030",
+      "category": "international_only",
+      "query": "Explain the priority right under the Paris Convention.",
+      "expected_jurisdiction": "international",
+      "got_jurisdiction": "international",
+      "jur_correct": true,
+      "confidence": 0.85,
+      "no_contamination": true,
+      "errors": []
+    }
+  ]
+}
