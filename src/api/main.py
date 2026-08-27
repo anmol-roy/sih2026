@@ -48,6 +48,7 @@ from generation.report_generator import ReportGenerator
 from routing.ip_router import IPRouter
 from routing.orchestrator import QueryOrchestrator
 from formulation.classifier import FormulationClassifier
+from formulation.analyze import FormulationAnalyzer
 
 load_dotenv(Path(__file__).parent.parent / ".env")
 
@@ -86,6 +87,7 @@ _reporter      : Optional[ReportGenerator]       = None
 _novelty_az    : Optional[NoveltyAnalyzer]       = None
 _invstep_az    : Optional[InventiveStepAnalyzer] = None
 _orchestrator  : Optional[QueryOrchestrator]     = None
+_form_analyzer : Optional[FormulationAnalyzer]   = None
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
@@ -201,6 +203,16 @@ def _get_orchestrator() -> QueryOrchestrator:
             llm=_get_llm(),
         )
     return _orchestrator
+
+
+def _get_form_analyzer() -> FormulationAnalyzer:
+    global _form_analyzer
+    if _form_analyzer is None:
+        _form_analyzer = FormulationAnalyzer(
+            embeddings=_get_embeddings(),
+            llm=_get_llm(),
+        )
+    return _form_analyzer
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -751,4 +763,191 @@ def ask(req: AskRequest):
         ],
         domains_used  = result.get("domains_used", []),
         query_type    = result.get("query_type", "semantic"),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 7 — Formulation Classification + ABS Compliance Helper
+# ─────────────────────────────────────────────────────────────────────────────
+
+class FormulationAnalysisRequest(BaseModel):
+    description: str
+
+
+class IngredientOut(BaseModel):
+    name                    : str
+    scientific_name         : Optional[str] = None
+    biological_resource     : bool
+    traditional_use_indicator: bool
+    traditional_systems     : list[str]
+    source                  : str
+
+
+class FormulationClassOut(BaseModel):
+    formulation_type                : str
+    secondary_types                 : list[str]
+    ingredients                     : list[str]
+    biological_resources            : list[str]
+    traditional_knowledge_indicators: list[str]
+    tk_systems                      : list[str]
+    ingredient_objects              : list[IngredientOut]
+    confidence                      : float
+    notes                           : Optional[str] = None
+
+
+class ABSAssessmentOut(BaseModel):
+    potentially_relevant           : bool
+    biological_resources           : list[str]
+    traditional_knowledge_detected : bool
+    reasons                        : list[str]
+    relevant_sources               : list[str]
+    requires_human_review          : bool
+    suggested_provisions           : list[str]
+
+
+class TKMatchItemOut(BaseModel):
+    source            : str
+    title             : str
+    matched_components: list[str]
+    score             : float
+    page              : Optional[int] = None
+
+
+class TKResultOut(BaseModel):
+    match_found: bool
+    matches    : list[TKMatchItemOut]
+
+
+class PatentResultOut(BaseModel):
+    publication_number: str
+    title             : str
+    similarity_score  : float
+    matched_components: list[str]
+    source            : str
+
+
+class LegalProvisionOut(BaseModel):
+    document  : str
+    section   : Optional[str] = None
+    subsection: Optional[str] = None
+    source    : str
+    page      : Optional[int] = None
+    chunk_id  : str
+
+
+class FormulationAnalysisResponse(BaseModel):
+    classification   : FormulationClassOut
+    abs_assessment   : ABSAssessmentOut
+    tk_results       : TKResultOut
+    patent_results   : list[PatentResultOut]
+    legal_provisions : list[LegalProvisionOut]
+    report           : str
+    confidence       : str
+
+
+@app.post(
+    "/analyze-formulation",
+    response_model=FormulationAnalysisResponse,
+    tags=["phase-7"],
+)
+def analyze_formulation(req: FormulationAnalysisRequest):
+    """
+    Phase 7 — Formulation Classification + ABS Compliance Helper.
+
+    Given a free-text formulation description, performs:
+
+    1. **Ingredient extraction** — identifies ingredients and enriches with
+       scientific names, biological-resource flags, and TK indicators from
+       the local knowledge base.
+
+    2. **Formulation classification** — AYURVEDA / SIDDHA / UNANI / YOGA /
+       TRADITIONAL_KNOWLEDGE / MODERN_PHARMACEUTICAL / BIOLOGICAL_RESOURCE /
+       MIXED / UNKNOWN.
+
+    3. **ABS assessment** — checks for potential Access and Benefit Sharing
+       relevance under the Biological Diversity Act, 2002 and the Nagoya
+       Protocol. Always flags for human review.
+
+    4. **TK / TKDL pointer** — searches the TK/AYUSH corpus for potentially
+       related traditional knowledge material when TK indicators are detected.
+
+    5. **Prior-art pointer** — searches for similar patent documents.
+
+    6. **Legal provision retrieval** — retrieves relevant provisions from the
+       Patents Act, Biological Diversity Act, and AYUSH corpus.
+
+    7. **Preliminary guidance report** — evidence-backed, fully cited,
+       always includes the disclaimer that this is not legal clearance.
+
+    **This endpoint does NOT provide legal clearance or ABS approval.**
+    All findings require professional review.
+    """
+    if not req.description.strip():
+        raise HTTPException(status_code=400, detail="description must not be empty")
+
+    result = _get_form_analyzer().analyze(req.description.strip())
+    d      = result.to_dict()
+
+    cls = d["classification"]
+    return FormulationAnalysisResponse(
+        classification=FormulationClassOut(
+            formulation_type                = cls["formulation_type"],
+            secondary_types                 = [t for t in cls.get("secondary_types", [])],
+            ingredients                     = cls.get("ingredients", []),
+            biological_resources            = cls.get("biological_resources", []),
+            traditional_knowledge_indicators= cls.get("traditional_knowledge_indicators", []),
+            tk_systems                      = cls.get("tk_systems", []),
+            ingredient_objects              = [
+                IngredientOut(
+                    name                     = i["name"],
+                    scientific_name          = i.get("scientific_name"),
+                    biological_resource      = i.get("biological_resource", False),
+                    traditional_use_indicator= i.get("traditional_use_indicator", False),
+                    traditional_systems      = i.get("traditional_systems", []),
+                    source                   = i.get("source", "extracted"),
+                )
+                for i in cls.get("ingredient_objects", [])
+            ],
+            confidence = cls.get("confidence", 0.0),
+            notes      = cls.get("notes"),
+        ),
+        abs_assessment=ABSAssessmentOut(
+            **d["abs_assessment"]
+        ),
+        tk_results=TKResultOut(
+            match_found = d["tk_results"].get("match_found", False),
+            matches     = [
+                TKMatchItemOut(
+                    source             = m.get("source", ""),
+                    title              = m.get("title", ""),
+                    matched_components = m.get("matched_components", []),
+                    score              = float(m.get("score", 0.0)),
+                    page               = m.get("page"),
+                )
+                for m in d["tk_results"].get("matches", [])
+            ],
+        ),
+        patent_results=[
+            PatentResultOut(
+                publication_number = r.get("publication_number", ""),
+                title              = r.get("title", ""),
+                similarity_score   = float(r.get("similarity_score", 0.0)),
+                matched_components = r.get("matched_components", []),
+                source             = r.get("source", ""),
+            )
+            for r in d.get("patent_results", [])
+        ],
+        legal_provisions=[
+            LegalProvisionOut(
+                document   = p.get("document", ""),
+                section    = p.get("section"),
+                subsection = p.get("subsection"),
+                source     = p.get("source", ""),
+                page       = p.get("page"),
+                chunk_id   = p.get("chunk_id", ""),
+            )
+            for p in d.get("legal_provisions", [])
+        ],
+        report     = d["report"],
+        confidence = d["confidence"],
     )

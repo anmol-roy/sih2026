@@ -160,6 +160,35 @@ LEGAL_REGISTRY: list[dict] = [
         "effective_date": "2001-01-01",
         "last_verified": "2026-08-25",
     },
+    # ── Phase 7: Biodiversity / ABS legislation ──────────────────────────
+    {
+        "path": "../data/raw/legal/biodiversity/biodiversity_act.pdf",
+        "document_id": "biodiversity_act_2002",
+        "title": "The Biological Diversity Act, 2002",
+        "source": "India Code",
+        "source_url": "https://www.indiacode.nic.in/handle/123456789/2046",
+        "document_type": "act",
+        "domain": "general",
+        "jurisdiction": "india",
+        "authority_level": "primary",
+        "version": "current",
+        "effective_date": "2004-10-05",
+        "last_verified": "2026-08-25",
+    },
+    {
+        "path": "../data/raw/legal/biodiversity/biodiversity_rules.pdf",
+        "document_id": "biodiversity_rules_2004",
+        "title": "The Biological Diversity Rules, 2004",
+        "source": "India Code",
+        "source_url": "https://www.indiacode.nic.in/handle/123456789/2046",
+        "document_type": "rule",
+        "domain": "general",
+        "jurisdiction": "india",
+        "authority_level": "secondary",
+        "version": "current",
+        "effective_date": "2004-10-01",
+        "last_verified": "2026-08-25",
+    },
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────

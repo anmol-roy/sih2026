@@ -1,0 +1,207 @@
+{
+  "neem": {
+    "scientific_name": "Azadirachta indica",
+    "traditional_systems": ["ayurveda", "siddha", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["antibacterial", "antifungal", "skin conditions", "pest repellent"]
+  },
+  "turmeric": {
+    "scientific_name": "Curcuma longa",
+    "traditional_systems": ["ayurveda", "siddha", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["anti-inflammatory", "wound healing", "skin conditions", "digestive"]
+  },
+  "ashwagandha": {
+    "scientific_name": "Withania somnifera",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["adaptogen", "stress", "cognitive function", "strength"]
+  },
+  "amla": {
+    "scientific_name": "Phyllanthus emblica",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["antioxidant", "vitamin C source", "hair care", "immunity"]
+  },
+  "brahmi": {
+    "scientific_name": "Bacopa monnieri",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["cognitive enhancement", "memory", "anxiety", "neuroprotection"]
+  },
+  "giloy": {
+    "scientific_name": "Tinospora cordifolia",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["immunity", "fever", "diabetes", "anti-inflammatory"]
+  },
+  "tulsi": {
+    "scientific_name": "Ocimum sanctum",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["respiratory", "antimicrobial", "stress", "immunity"]
+  },
+  "haritaki": {
+    "scientific_name": "Terminalia chebula",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["digestive", "laxative", "antioxidant", "detoxification"]
+  },
+  "bibhitaki": {
+    "scientific_name": "Terminalia bellirica",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["respiratory", "digestive", "antioxidant"]
+  },
+  "shankhpushpi": {
+    "scientific_name": "Convolvulus pluricaulis",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["cognitive function", "memory", "anxiety", "sleep"]
+  },
+  "ginger": {
+    "scientific_name": "Zingiber officinale",
+    "traditional_systems": ["ayurveda", "siddha", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["digestive", "anti-nausea", "anti-inflammatory", "warming"]
+  },
+  "garlic": {
+    "scientific_name": "Allium sativum",
+    "traditional_systems": ["ayurveda", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["antimicrobial", "cardiovascular", "immunity", "antifungal"]
+  },
+  "aloe vera": {
+    "scientific_name": "Aloe barbadensis",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["skin conditions", "wound healing", "digestive", "burns"]
+  },
+  "bitter melon": {
+    "scientific_name": "Momordica charantia",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["diabetes", "antiviral", "blood sugar", "bitter tonic"]
+  },
+  "boswellia": {
+    "scientific_name": "Boswellia serrata",
+    "traditional_systems": ["ayurveda", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["anti-inflammatory", "arthritis", "respiratory", "pain"]
+  },
+  "andrographis": {
+    "scientific_name": "Andrographis paniculata",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["antimicrobial", "liver protection", "immunity", "fever"]
+  },
+  "shatavari": {
+    "scientific_name": "Asparagus racemosus",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["reproductive health", "adaptogen", "galactagogue", "immunity"]
+  },
+  "triphala": {
+    "scientific_name": null,
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["digestive", "detoxification", "antioxidant", "eye care"],
+    "notes": "Classical Ayurvedic combination of haritaki, bibhitaki, amla"
+  },
+  "chyawanprash": {
+    "scientific_name": null,
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["immunity", "rejuvenation", "respiratory", "antioxidant"],
+    "notes": "Ancient Ayurvedic polyherbal formulation documented in classical texts"
+  },
+  "pippali": {
+    "scientific_name": "Piper longum",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["respiratory", "digestive", "bioavailability enhancer"]
+  },
+  "vidanga": {
+    "scientific_name": "Embelia ribes",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["anthelmintic", "digestive", "weight management"]
+  },
+  "kutki": {
+    "scientific_name": "Picrorhiza kurroa",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["liver protection", "immunomodulation", "anti-inflammatory"]
+  },
+  "punarnava": {
+    "scientific_name": "Boerhavia diffusa",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["kidney health", "diuretic", "anti-inflammatory", "liver"]
+  },
+  "gudmar": {
+    "scientific_name": "Gymnema sylvestre",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["diabetes", "blood sugar", "anti-obesity", "digestive"]
+  },
+  "karela": {
+    "scientific_name": "Momordica charantia",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["diabetes", "antiviral", "blood sugar"]
+  },
+  "methi": {
+    "scientific_name": "Trigonella foenum-graecum",
+    "traditional_systems": ["ayurveda", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["diabetes", "digestive", "lactation", "anti-inflammatory"]
+  },
+  "curcumin": {
+    "scientific_name": "Curcuma longa (active compound)",
+    "traditional_systems": ["ayurveda", "siddha"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["anti-inflammatory", "antioxidant", "cancer research"]
+  },
+  "withanolides": {
+    "scientific_name": "Withania somnifera (active compounds)",
+    "traditional_systems": ["ayurveda"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["adaptogen", "anti-inflammatory", "neuroprotection"]
+  },
+  "boswellic acid": {
+    "scientific_name": "Boswellia serrata (active compound)",
+    "traditional_systems": ["ayurveda", "unani"],
+    "biological_resource": true,
+    "traditional_use_indicator": true,
+    "common_uses": ["anti-inflammatory", "arthritis"]
+  }
+}

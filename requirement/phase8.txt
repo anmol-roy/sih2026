@@ -1,0 +1,972 @@
+# PHASE 8 — Multilingual Layer + Bhashini
+
+Now we cover another **explicit requirement** without overbuilding it.
+
+> **Goal:** The same grounded IP answer should work in multiple Indian languages while **preserving citations, legal terms, section numbers, and confidence**.
+
+For your SIH prototype, don't translate the entire corpus. Build a **query → retrieval → answer → translation** pipeline.
+
+---
+
+# 1. What Phase 8 should achieve
+
+Example:
+
+```text
+User asks in Hindi
+        ↓
+Language Detection
+        ↓
+Hindi → English
+        ↓
+Existing IP-SAKTI pipeline
+        ↓
+English grounded answer
+        ↓
+English → Hindi
+        ↓
+Hindi answer
+        ↓
+Same citations
+```
+
+For prototype, support:
+
+```text
+English
+Hindi
+Kannada
+```
+
+You can add more later.
+
+---
+
+# 2. Important architecture decision
+
+**Do NOT translate your entire PDF corpus.**
+
+Keep:
+
+```text
+Original authoritative documents
+            ↓
+        English corpus
+```
+
+Then:
+
+```text
+User language
+      ↓
+Translate query
+      ↓
+English retrieval
+      ↓
+English evidence
+      ↓
+Generate grounded answer
+      ↓
+Translate answer
+```
+
+This avoids:
+
+```text
+❌ storing 10 copies of every document
+❌ translation inconsistencies
+❌ huge vector database
+❌ losing legal terminology
+```
+
+---
+
+# 3. Final Phase 8 architecture
+
+```text
+                         USER
+                           ↓
+                    Language Detection
+                           ↓
+              ┌────────────┴────────────┐
+              ↓                         ↓
+          English                  Hindi/Kannada
+              ↓                         ↓
+              │                    Translate Query
+              │                         ↓
+              └──────────────┬──────────┘
+                             ↓
+                      English Query
+                             ↓
+                    IP Type Router
+                             ↓
+                   Jurisdiction Router
+                             ↓
+                   Existing RAG System
+                             ↓
+                  Evidence + Citations
+                             ↓
+                    Grounded Answer
+                             ↓
+                    Translate Answer
+                             ↓
+                     User Language
+```
+
+---
+
+# 4. Create language schema
+
+Create:
+
+```text
+src/
+└── multilingual/
+    └── schemas.py
+```
+
+```python
+from enum import Enum
+from pydantic import BaseModel
+
+
+class Language(str, Enum):
+
+    ENGLISH = "en"
+    HINDI = "hi"
+    KANNADA = "kn"
+
+
+class LanguageResult(BaseModel):
+
+    language: Language
+
+    confidence: float
+```
+
+---
+
+# 5. Detect language
+
+Create:
+
+```text
+src/multilingual/detector.py
+```
+
+For the prototype, use a lightweight language detector.
+
+```python
+from langdetect import detect
+
+from schemas import Language
+
+
+LANGUAGE_MAP = {
+    "en": Language.ENGLISH,
+    "hi": Language.HINDI,
+    "kn": Language.KANNADA,
+}
+
+
+def detect_language(text: str):
+
+    detected = detect(text)
+
+    return LANGUAGE_MAP.get(
+        detected,
+        Language.ENGLISH
+    )
+```
+
+Add:
+
+```text
+langdetect
+```
+
+to `requirements.txt`.
+
+---
+
+# 6. Don't blindly trust language detection
+
+Short queries can be difficult:
+
+```text
+"Patent kya hai?"
+```
+
+A language detector may struggle.
+
+So keep:
+
+```json
+{
+    "language": "hi"
+}
+```
+
+as an optional API parameter.
+
+User-selected language should override automatic detection.
+
+---
+
+# 7. Add language to API request
+
+Your request becomes:
+
+```json
+{
+    "question": "क्या मैं इस फॉर्मूलेशन का पेटेंट करा सकता हूँ?",
+    "language": "hi",
+    "jurisdiction": "india",
+    "ip_type": "patent"
+}
+```
+
+Or user can simply send:
+
+```json
+{
+    "question": "क्या मैं इस फॉर्मूलेशन का पेटेंट करा सकता हूँ?"
+}
+```
+
+and your system detects the language.
+
+---
+
+# 8. Translation layer
+
+Create:
+
+```text
+src/
+└── multilingual/
+    └── translator.py
+```
+
+For development, you can initially use your existing LLM.
+
+```python
+from langchain_groq import ChatGroq
+
+
+llm = ChatGroq(
+    model="llama-3.3-70b-versatile",
+    temperature=0
+)
+
+
+def translate_to_english(text: str, language: str):
+
+    if language == "en":
+        return text
+
+    prompt = f"""
+Translate the following intellectual-property query
+into English.
+
+Preserve:
+
+- Legal terminology
+- Section numbers
+- Act names
+- Patent terminology
+- Trademark terminology
+- Scientific names
+- Ingredient names
+
+Do not add information.
+
+Language:
+{language}
+
+Text:
+{text}
+"""
+
+    response = llm.invoke(prompt)
+
+    return response.content
+```
+
+---
+
+# 9. Why translation must happen BEFORE retrieval
+
+Suppose the user asks:
+
+> क्या धारा 3(p) पारंपरिक ज्ञान से संबंधित है?
+
+You want:
+
+```text
+Hindi
+ ↓
+"Is Section 3(p) related to traditional knowledge?"
+ ↓
+Retriever
+ ↓
+Patents Act
+Section 3(p)
+```
+
+Not:
+
+```text
+Hindi
+ ↓
+Embedding
+ ↓
+Random Hindi/English chunks
+```
+
+Your authoritative corpus remains centralized.
+
+---
+
+# 10. Preserve legal identifiers
+
+This is critical.
+
+Your translation system must **never translate**:
+
+```text
+Section 3(p)
+Rule 14
+Patents Act, 1970
+PCT
+TRIPS
+IPC
+CPC
+IN123456
+```
+
+For example:
+
+❌ Bad:
+
+```text
+धारा तीन (पी)
+```
+
+Better:
+
+```text
+Section 3(p)
+```
+
+You can explain it in Hindi afterward.
+
+---
+
+# 11. Generate the grounded answer in English first
+
+Keep your existing pipeline:
+
+```text
+English Query
+      ↓
+Retrieval
+      ↓
+Evidence
+      ↓
+LLM
+      ↓
+English Grounded Answer
+```
+
+Example:
+
+```text
+Section 3(p) excludes certain inventions that are
+essentially traditional knowledge...
+```
+
+with:
+
+```text
+Source:
+Patents Act, 1970
+Section 3(p)
+Page 8
+```
+
+---
+
+# 12. Translate only the answer
+
+Now:
+
+```text
+English Answer
+      ↓
+Hindi/Kannada Translation
+```
+
+But keep citations as structured data.
+
+Don't send:
+
+```text
+Answer + citations
+```
+
+as one giant block to the translator.
+
+Instead:
+
+```json
+{
+    "answer": "Section 3(p) ...",
+    "citations": [
+        {
+            "document": "Patents Act, 1970",
+            "section": "3(p)",
+            "page": 8
+        }
+    ]
+}
+```
+
+Translate only:
+
+```text
+answer
+```
+
+Then attach:
+
+```text
+citations
+```
+
+again.
+
+---
+
+# 13. Create answer schema
+
+```text
+src/multilingual/schemas.py
+```
+
+```python
+from typing import List
+from pydantic import BaseModel
+
+
+class Citation(BaseModel):
+
+    document: str
+
+    section: str | None = None
+
+    page: int | None = None
+
+    source: str
+
+
+class GroundedAnswer(BaseModel):
+
+    answer: str
+
+    citations: List[Citation]
+
+    confidence: float
+```
+
+Now translation cannot accidentally destroy your citations.
+
+---
+
+# 14. Translate the answer
+
+```python
+def translate_answer(
+    answer: str,
+    target_language: str
+):
+
+    if target_language == "en":
+        return answer
+
+    prompt = f"""
+Translate this intellectual-property information
+into {target_language}.
+
+Rules:
+
+1. Preserve legal meaning.
+2. Do not change Section numbers.
+3. Do not change Rule numbers.
+4. Do not translate official Act names unless
+   an explanatory translation is useful.
+5. Preserve scientific names.
+6. Do not add legal conclusions.
+7. Do not remove uncertainty.
+8. Do not add information.
+
+Text:
+
+{answer}
+"""
+
+    response = llm.invoke(prompt)
+
+    return response.content
+```
+
+---
+
+# 15. Preserve confidence
+
+Suppose English pipeline returns:
+
+```json
+{
+    "confidence": 0.82
+}
+```
+
+Hindi output must still be:
+
+```json
+{
+    "confidence": 0.82
+}
+```
+
+Translation should **never recalculate confidence**.
+
+Same for:
+
+```text
+citations
+sources
+jurisdiction
+IP type
+human escalation
+```
+
+---
+
+# 16. Add language metadata
+
+Your final response schema can become:
+
+```json
+{
+    "language": "hi",
+
+    "original_question": "...",
+
+    "normalized_question": "...",
+
+    "ip_type": "patent",
+
+    "jurisdiction": "india",
+
+    "answer": "...",
+
+    "citations": [],
+
+    "confidence": 0.91,
+
+    "needs_human_review": false
+}
+```
+
+This is a strong backend contract.
+
+---
+
+# 17. Bhashini integration
+
+Once the basic multilingual pipeline works, add Bhashini as the **Indian-language infrastructure layer** rather than making your entire application dependent on it from day one.
+
+Architecture:
+
+```text
+User
+ ↓
+Language Detection
+ ↓
+┌─────────────────────────┐
+│ Language Service        │
+│                         │
+│ Bhashini / fallback LLM │
+└─────────────────────────┘
+ ↓
+English normalized query
+ ↓
+IP-SAKTI
+ ↓
+Grounded answer
+ ↓
+Bhashini / fallback
+ ↓
+User language
+```
+
+For your prototype, the important thing is to demonstrate the **integration point**, not build an enormous language infrastructure system.
+
+---
+
+# 18. Add a translation provider abstraction
+
+Don't hard-code Bhashini everywhere.
+
+Create:
+
+```text
+src/
+└── multilingual/
+    ├── translator.py
+    ├── bhashini.py
+    └── provider.py
+```
+
+```python
+class TranslationProvider:
+
+    def translate_to_english(
+        self,
+        text: str,
+        language: str
+    ):
+        raise NotImplementedError
+
+    def translate_from_english(
+        self,
+        text: str,
+        language: str
+    ):
+        raise NotImplementedError
+```
+
+Then:
+
+```text
+TranslationProvider
+        │
+        ├── BhashiniProvider
+        │
+        └── LLMTranslationProvider
+```
+
+This gives you a fallback if the external service is unavailable.
+
+---
+
+# 19. Multilingual + formulation example
+
+This is where your project becomes impressive.
+
+User asks in Hindi:
+
+> "नीम और हल्दी से बनी इस आयुर्वेदिक दवा पर पेटेंट मिल सकता है क्या?"
+
+Pipeline:
+
+```text
+Hindi
+ ↓
+Language detection
+ ↓
+English normalization
+ ↓
+"Can this Ayurvedic formulation made from neem
+and turmeric be patented?"
+ ↓
+IP Router
+ ↓
+Patent + Traditional Knowledge
+ ↓
+Formulation Classifier
+ ↓
+Ayurveda
+ ↓
+ABS check
+ ↓
+TK search
+ ↓
+Prior-art search
+ ↓
+Section 3(p) retrieval
+ ↓
+Evidence fusion
+ ↓
+Grounded English answer
+ ↓
+Hindi translation
+ ↓
+Hindi answer + original citations
+```
+
+This is exactly the type of **end-to-end feature breadth** you want for the prototype.
+
+---
+
+# 20. Multilingual guardrails
+
+You must preserve the same guardrails after translation.
+
+English:
+
+> "This information is not legal advice."
+
+Hindi:
+
+> "यह जानकारी कानूनी सलाह नहीं है।"
+
+Kannada:
+
+> "ಈ ಮಾಹಿತಿಯು ಕಾನೂನು ಸಲಹೆಯಲ್ಲ."
+
+The translated version must not weaken or remove the disclaimer.
+
+---
+
+# 21. Handle untranslated legal terms
+
+Create a protected-term list:
+
+```text
+data/
+└── multilingual/
+    └── protected_terms.json
+```
+
+```json
+{
+    "terms": [
+        "Patents Act, 1970",
+        "Section 3(p)",
+        "Trade Marks Act, 1999",
+        "Copyright Act, 1957",
+        "PCT",
+        "TRIPS",
+        "TKDL",
+        "IPC",
+        "CPC",
+        "ABS"
+    ]
+}
+```
+
+Before translation:
+
+```text
+Legal text
+ ↓
+Protect terms
+ ↓
+Translate
+ ↓
+Restore terms
+```
+
+This isn't mandatory for V1, but it's useful.
+
+---
+
+# 22. Multilingual evaluation
+
+Create:
+
+```text
+evaluation/
+└── multilingual/
+    ├── english.json
+    ├── hindi.json
+    └── kannada.json
+```
+
+Use the **same questions** in all three languages.
+
+Example:
+
+### English
+
+```text
+What does Section 3(p) of the Patents Act say?
+```
+
+### Hindi
+
+```text
+पेटेंट अधिनियम की धारा 3(p) क्या कहती है?
+```
+
+### Kannada
+
+```text
+ಪೇಟೆಂಟ್ ಕಾಯ್ದೆಯ ಸೆಕ್ಷನ್ 3(p) ಏನು ಹೇಳುತ್ತದೆ?
+```
+
+All three should retrieve:
+
+```text
+Patents Act
+Section 3(p)
+```
+
+---
+
+# 23. Measure three things
+
+Don't only check whether the translation "sounds good."
+
+Measure:
+
+### Retrieval consistency
+
+```text
+English → Section 3(p)
+Hindi → Section 3(p)
+Kannada → Section 3(p)
+```
+
+### Citation consistency
+
+All languages should cite the **same source**.
+
+### Meaning consistency
+
+The answer should not change legal meaning.
+
+Your evaluation table:
+
+```text
+| Question | EN | HI | KN |
+|----------|----|----|----|
+| Retrieval | ✓ | ✓ | ✓ |
+| Citation | ✓ | ✓ | ✓ |
+| Meaning | ✓ | ✓ | ✓ |
+```
+
+---
+
+# 24. Phase 8 folder structure
+
+```text
+ip-sakti-sahayak/
+│
+├── data/
+│   ├── raw/
+│   ├── processed/
+│   └── multilingual/
+│       └── protected_terms.json
+│
+├── src/
+│   │
+│   ├── routing/
+│   │   ├── ip_router.py
+│   │   ├── jurisdiction.py
+│   │   └── orchestrator.py
+│   │
+│   ├── formulation/
+│   │   ├── classifier.py
+│   │   ├── extractor.py
+│   │   └── schemas.py
+│   │
+│   ├── abs/
+│   │   └── abs_checker.py
+│   │
+│   ├── retrieval/
+│   │   ├── vector_search.py
+│   │   ├── bm25_search.py
+│   │   ├── hybrid_search.py
+│   │   └── reranker.py
+│   │
+│   ├── analysis/
+│   │   ├── novelty.py
+│   │   └── inventive_step.py
+│   │
+│   └── multilingual/
+│       ├── detector.py
+│       ├── translator.py
+│       ├── bhashini.py
+│       ├── provider.py
+│       └── schemas.py
+│
+└── evaluation/
+    └── multilingual/
+```
+
+---
+
+# 25. Phase 8 success criteria
+
+Before moving on:
+
+```text
+☑ English query works
+
+☑ Hindi query works
+
+☑ Kannada query works
+
+☑ Automatic language detection works
+
+☑ User can explicitly select language
+
+☑ Non-English query is normalized before retrieval
+
+☑ Same authoritative documents are retrieved
+
+☑ Citations remain unchanged
+
+☑ Section/Rule numbers remain unchanged
+
+☑ Confidence remains unchanged
+
+☑ Legal disclaimer remains present
+
+☑ "I don't know" response works in target language
+
+☑ Formulation analysis works in target language
+
+☑ Patent/TK/ABS pipeline works after translation
+
+☑ Bhashini integration point exists
+```
+
+---
+
+## Where you are after Phase 8
+
+Your system now covers almost all of the **core user-facing intelligence** in the expected solution:
+
+```text
+                    IP-SAKTI
+                       │
+       ┌───────────────┼────────────────┐
+       ↓               ↓                ↓
+   IP Routing     Jurisdiction     Multilingual
+       ↓          India/Intl            ↓
+       └───────────────┼────────────────┘
+                       ↓
+                 RAG + Retrieval
+                       ↓
+        ┌──────────────┼───────────────┐
+        ↓              ↓               ↓
+      Patent          TK              ABS
+        ↓              ↓               ↓
+    Prior Art      TKDL/AYUSH      Compliance
+        └──────────────┼───────────────┘
+                       ↓
+                Evidence Fusion
+                       ↓
+             Preliminary Analysis
+                       ↓
+          Citation + Confidence
+```
+
+### Next: **Phase 9 — Guardrails + Human Escalation + Privacy/Audit**
+
+This is the phase that will cover the remaining **safety, “information not legal advice,” human facilitator, audit, privacy and DPDP-alignment requirements** without building a giant enterprise security system.

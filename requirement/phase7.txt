@@ -1,0 +1,697 @@
+PHASE 7 — Formulation Classification + ABS Compliance Helper
+
+This phase directly targets one of the most domain-specific parts of your SIH problem statement:
+
+“formulation-classification flow; an ABS-compliance helper and a TKDL / prior-art pointer.”
+
+You already have the TK/prior-art engine from Phase 3–4 and the IP/jurisdiction router from Phase 5–6.
+
+Now connect them.
+
+1. Phase 7 Goal
+
+Given something like:
+
+"I developed a formulation containing neem, turmeric and ashwagandha for treating skin inflammation."
+
+Your system should determine:
+
+User formulation
+       ↓
+Extract ingredients/materials
+       ↓
+Classify formulation
+       ↓
+Identify biological resources
+       ↓
+Identify traditional-knowledge indicators
+       ↓
+Check potential ABS relevance
+       ↓
+Point to TK / prior-art evidence
+       ↓
+Retrieve relevant Indian provisions
+       ↓
+Generate preliminary guidance
+
+Important: This is a compliance helper, not an automatic legal clearance system.
+
+2. What you need to support
+
+For the prototype, classify into:
+
+AYURVEDA
+SIDDHA
+UNANI
+YOGA
+TRADITIONAL_KNOWLEDGE
+MODERN_PHARMACEUTICAL
+BIOLOGICAL_RESOURCE
+MIXED
+UNKNOWN
+
+Don't try to build a perfect medical/formulation classifier.
+
+The goal is:
+
+Identify which regulatory/IP knowledge paths should be activated.
+
+3. Architecture
+                    FORMULATION
+                         ↓
+                Entity Extraction
+                         ↓
+              Formulation Classifier
+                         ↓
+       ┌─────────────────┼─────────────────┐
+       ↓                 ↓                 ↓
+   Ingredients       Traditional       Biological
+                     Knowledge          Resources
+       ↓                 ↓                 ↓
+       └─────────────────┼─────────────────┘
+                         ↓
+                    ABS Checker
+                         ↓
+              ┌──────────┴──────────┐
+              ↓                     ↓
+          TK Search             Legal Search
+              ↓                     ↓
+              └──────────┬──────────┘
+                         ↓
+                  Evidence Fusion
+                         ↓
+                Preliminary Guidance
+4. Create the formulation schema
+
+Create:
+
+src/formulation/schemas.py
+from enum import Enum
+from typing import List
+from pydantic import BaseModel
+
+
+class FormulationType(str, Enum):
+
+    AYURVEDA = "ayurveda"
+    SIDDHA = "siddha"
+    UNANI = "unani"
+    YOGA = "yoga"
+    TRADITIONAL_KNOWLEDGE = "traditional_knowledge"
+    MODERN_PHARMACEUTICAL = "modern_pharmaceutical"
+    BIOLOGICAL_RESOURCE = "biological_resource"
+    MIXED = "mixed"
+    UNKNOWN = "unknown"
+
+
+class Ingredient(BaseModel):
+
+    name: str
+
+    scientific_name: str | None = None
+
+    biological_resource: bool = False
+
+    traditional_use_indicator: bool = False
+
+
+class FormulationClassification(BaseModel):
+
+    formulation_type: FormulationType
+
+    ingredients: List[Ingredient]
+
+    traditional_knowledge_indicators: List[str]
+
+    biological_resource_indicators: List[str]
+
+    confidence: float
+5. Extract formulation information
+
+Create:
+
+src/formulation/extractor.py
+
+The LLM should convert:
+
+"I created an Ayurvedic formulation using neem
+and turmeric traditionally used for skin problems."
+
+into structured data.
+
+Example:
+
+{
+  "ingredients": [
+    {
+      "name": "neem",
+      "scientific_name": "Azadirachta indica",
+      "biological_resource": true,
+      "traditional_use_indicator": true
+    },
+    {
+      "name": "turmeric",
+      "scientific_name": "Curcuma longa",
+      "biological_resource": true,
+      "traditional_use_indicator": true
+    }
+  ]
+}
+6. Don't rely only on the LLM
+
+This is important.
+
+For ingredients, create a small local knowledge file:
+
+data/
+└── formulation/
+    └── ingredients.json
+
+Example:
+
+{
+  "neem": {
+    "scientific_name": "Azadirachta indica",
+    "traditional_systems": [
+      "ayurveda"
+    ],
+    "biological_resource": true
+  },
+
+  "turmeric": {
+    "scientific_name": "Curcuma longa",
+    "traditional_systems": [
+      "ayurveda",
+      "siddha"
+    ],
+    "biological_resource": true
+  }
+}
+
+The LLM extracts the name.
+
+Your database validates/enriches it.
+
+LLM extraction
+      ↓
+Local knowledge lookup
+      ↓
+Validated entity
+
+This reduces hallucinations.
+
+7. Formulation classification
+
+Create:
+
+src/formulation/classifier.py
+
+Classification should consider:
+
+Name of formulation
++
+Ingredients
++
+Traditional system mentioned
++
+Traditional-use language
++
+Source/reference
+
+Example:
+
+"Churna prepared according to Ayurveda"
+        ↓
+AYURVEDA
+"Classical Siddha preparation"
+        ↓
+SIDDHA
+"New synthetic drug molecule"
+        ↓
+MODERN_PHARMACEUTICAL
+8. Build the ABS decision tree
+
+Keep it simple.
+
+                Formulation
+                     ↓
+          Biological resource involved?
+                /          \
+              NO            YES
+              ↓              ↓
+        ABS check ends    Traditional
+                         knowledge involved?
+                           /       \
+                         NO         YES
+                         ↓           ↓
+                  Potentially      Higher
+                  relevant        relevance
+
+Your output should not be:
+
+"You need ABS approval."
+
+Instead:
+
+"Potential ABS relevance detected. Further assessment is required based on the nature/source of the biological resource, intended use and applicable law."
+
+9. Create ABS result schema
+from pydantic import BaseModel
+from typing import List
+
+
+class ABSAssessment(BaseModel):
+
+    potentially_relevant: bool
+
+    biological_resources: List[str]
+
+    traditional_knowledge_detected: bool
+
+    reasons: List[str]
+
+    relevant_sources: List[str]
+
+    requires_human_review: bool
+10. Build abs_checker.py
+
+Create:
+
+src/abs/abs_checker.py
+
+Logic:
+
+def assess_abs(formulation):
+
+    biological_resources = []
+
+    for ingredient in formulation.ingredients:
+
+        if ingredient.biological_resource:
+
+            biological_resources.append(
+                ingredient.name
+            )
+
+    tk_detected = (
+        len(formulation.traditional_knowledge_indicators) > 0
+        or any(
+            ingredient.traditional_use_indicator
+            for ingredient in formulation.ingredients
+        )
+    )
+
+    potentially_relevant = (
+        len(biological_resources) > 0
+    )
+
+    reasons = []
+
+    if biological_resources:
+
+        reasons.append(
+            "Biological resources were identified."
+        )
+
+    if tk_detected:
+
+        reasons.append(
+            "Traditional-knowledge indicators were identified."
+        )
+
+    return {
+        "potentially_relevant": potentially_relevant,
+
+        "biological_resources":
+            biological_resources,
+
+        "traditional_knowledge_detected":
+            tk_detected,
+
+        "reasons":
+            reasons,
+
+        "requires_human_review":
+            potentially_relevant
+    }
+
+This is deliberately conservative.
+
+11. Connect ABS to legal RAG
+
+If:
+
+potentially_relevant = true
+
+automatically search your legal corpus for relevant material.
+
+For example:
+
+Formulation
+     ↓
+ABS detected
+     ↓
+Legal Retriever
+     ↓
+Relevant Indian biodiversity / ABS provisions
+     ↓
+Evidence
+
+You'll need to add the relevant authoritative biodiversity/ABS legislation and rules to your corpus.
+
+Your corpus should therefore expand:
+
+data/raw/legal/
+│
+├── patents/
+├── trademarks/
+├── copyright/
+├── designs/
+├── geographical_indications/
+│
+└── biodiversity/
+    ├── biodiversity_act.pdf
+    └── biodiversity_rules.pdf
+
+Use the current official versions from authoritative government sources.
+
+12. Connect ABS to TK search
+
+If:
+
+traditional_knowledge_detected = true
+
+run:
+
+TK Search
+
+For example:
+
+Neem + turmeric
+      ↓
+TK/AYUSH corpus
+      ↓
+Potential matches
+
+Return:
+
+{
+  "tk_matches": [
+    {
+      "source": "AYUSH document",
+      "ingredient": "neem",
+      "match_type": "semantic",
+      "page": 25
+    }
+  ]
+}
+13. Connect ABS to prior-art search
+
+If the formulation looks like an invention:
+
+Formulation
+ ↓
+Patent Search
+ ↓
+Prior Art
+
+So now the same formulation triggers three parallel investigations:
+
+                   FORMULATION
+                        ↓
+       ┌────────────────┼────────────────┐
+       ↓                ↓                ↓
+     Legal            TK Search       Patent Search
+       ↓                ↓                ↓
+     ABS rules       TK evidence     Prior art
+       └────────────────┼────────────────┘
+                        ↓
+                  Evidence Fusion
+
+This is excellent for the SIH demo because one input produces meaningful multi-source analysis.
+
+14. Build the TKDL pointer
+
+Don't claim:
+
+"TKDL says your invention is not patentable."
+
+Instead:
+
+Traditional Knowledge Pointer
+
+Potentially related traditional knowledge found.
+
+Relevant evidence:
+• Source
+• Formulation/ingredient
+• Page/record
+• Similarity
+• Link/reference where permitted
+
+Your backend:
+
+{
+  "tk_pointer": {
+    "match_found": true,
+
+    "matches": [
+      {
+        "term": "neem",
+        "source": "...",
+        "page": 23,
+        "similarity": 0.89
+      }
+    ]
+  }
+}
+15. Build a single formulation analysis function
+
+Create:
+
+src/formulation/analyze.py
+
+Pipeline:
+
+def analyze_formulation(text):
+
+    extracted = extract_formulation(text)
+
+    classification = classify_formulation(
+        extracted
+    )
+
+    abs_result = assess_abs(
+        classification
+    )
+
+    tk_results = search_traditional_knowledge(
+        classification
+    )
+
+    patent_results = search_prior_art(
+        classification
+    )
+
+    legal_results = search_relevant_law(
+        classification,
+        abs_result
+    )
+
+    return {
+        "classification": classification,
+        "abs": abs_result,
+        "traditional_knowledge": tk_results,
+        "prior_art": patent_results,
+        "legal": legal_results
+    }
+
+Now you have one reusable backend capability.
+
+16. Example end-to-end
+
+Input:
+
+I developed an Ayurvedic formulation containing
+neem, turmeric and ashwagandha for treating
+skin inflammation.
+
+Your system should produce something like:
+
+FORMULATION
+-----------
+Type:
+Ayurveda / Traditional Knowledge
+
+Ingredients:
+• Neem
+• Turmeric
+• Ashwagandha
+
+
+BIOLOGICAL RESOURCES
+--------------------
+• Neem
+• Turmeric
+• Ashwagandha
+
+
+TRADITIONAL KNOWLEDGE
+---------------------
+Potential TK indicators detected.
+
+Related evidence:
+• Source A
+• Source B
+
+
+ABS
+---
+Potential ABS relevance detected.
+
+Reason:
+Biological resources were identified.
+
+Further assessment required.
+
+
+PATENT PRIOR ART
+----------------
+Potentially similar patent documents:
+• Patent A
+• Patent B
+
+
+LEGAL PROVISIONS
+----------------
+• Relevant patent provision
+• Relevant biodiversity/ABS provision
+
+
+ASSESSMENT
+----------
+Potential traditional-knowledge and biological-resource
+issues were identified.
+
+Further professional review is recommended.
+
+Every factual/legal statement should have a citation.
+
+17. Connect Phase 7 to your existing architecture
+
+You now have:
+
+                         USER
+                           ↓
+                  Query Understanding
+                           ↓
+                   IP Type Router
+                           ↓
+                 Jurisdiction Router
+                           ↓
+                ┌──────────┴──────────┐
+                ↓                     ↓
+             GENERAL              FORMULATION
+                ↓                     ↓
+             IP RAG             Classification
+                                      ↓
+                              Biological Resource?
+                                      ↓
+                                   ABS Check
+                                      ↓
+                     ┌────────────────┼───────────────┐
+                     ↓                ↓               ↓
+                  Legal RAG        TK Search      Patent Search
+                     ↓                ↓               ↓
+                     └────────────────┼───────────────┘
+                                      ↓
+                               Evidence Fusion
+                                      ↓
+                              Preliminary Guidance
+                                      ↓
+                              Citations + Confidence
+
+Your goal is:                          
+
+DETECT
+  ↓
+CLASSIFY
+  ↓
+FIND RELEVANT EVIDENCE
+  ↓
+POINT USER TO REQUIREMENTS
+  ↓
+ESCALATE IF UNCERTAIN
+
+That's enough.
+
+19. Phase 7 success criteria
+
+Before moving ahead, test at least these:
+
+Case 1 — Ayurveda
+Neem + turmeric + traditional Ayurvedic use
+
+Should detect:
+
+Ayurveda
++
+biological resources
++
+TK indicators
++
+ABS relevance
++
+TK search
++
+prior-art search
+Case 2 — Modern formulation
+Synthetic chemical compound developed
+through a new laboratory process.
+
+Should detect:
+
+Modern pharmaceutical
++
+patent search
+
+and not automatically trigger TK/ABS.
+
+Case 3 — Traditional knowledge
+A traditional Siddha preparation documented
+in classical literature.
+
+Should detect:
+
+Siddha
++
+traditional knowledge
++
+TK search
+Case 4 — Uncertain
+A mixture containing several plant extracts.
+
+Should produce:
+
+MIXED / UNCERTAIN
++
+human review
+
+rather than confidently guessing.
+
+Phase 7 completion
+
+At this point your system covers:
+
+✅ Basic RAG
+✅ Legal RAG
+✅ Citations
+✅ Prior-art search
+✅ TK search
+✅ Patentability analysis
+✅ IP type routing
+✅ India / International separation
+✅ Formulation classification
+✅ Biological-resource detection
+✅ ABS relevance detection
+✅ TKDL pointer
