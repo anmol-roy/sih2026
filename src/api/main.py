@@ -951,3 +951,469 @@ def analyze_formulation(req: FormulationAnalysisRequest):
         report     = d["report"],
         confidence = d["confidence"],
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 8 — Multilingual Q&A
+# ─────────────────────────────────────────────────────────────────────────────
+
+from multilingual.schemas import Language as MLLanguage, MultilingualCitation
+from multilingual.detector import LanguageDetector
+from multilingual.translator import MultilingualTranslator
+
+_ml_translator: Optional[MultilingualTranslator] = None
+_ml_detector  : Optional[LanguageDetector]       = None
+
+
+def _get_ml_translator() -> MultilingualTranslator:
+    global _ml_translator
+    if _ml_translator is None:
+        _ml_translator = MultilingualTranslator(
+            prefer_bhashini=False, llm=_get_llm()
+        )
+    return _ml_translator
+
+
+def _get_ml_detector() -> LanguageDetector:
+    global _ml_detector
+    if _ml_detector is None:
+        _ml_detector = LanguageDetector()
+    return _ml_detector
+
+
+class MultilingualQueryRequest(BaseModel):
+    question    : str
+    language    : Optional[str] = None   # "en" | "hi" | "kn" — overrides detection
+    domain      : Optional[str] = None
+    jurisdiction: Optional[str] = None
+    ip_type     : Optional[str] = None
+
+
+class MultilingualCitationOut(BaseModel):
+    document    : str
+    section     : Optional[str] = None
+    subsection  : Optional[str] = None
+    page        : Optional[int] = None
+    source      : str
+    jurisdiction: Optional[str] = None
+    chunk_id    : str
+
+
+class MultilingualQueryResponse(BaseModel):
+    language            : str            # detected / overridden language code
+    original_question   : str
+    normalized_question : str            # English version used for retrieval
+    ip_types            : list[str]
+    jurisdiction        : Optional[str]
+    answer              : str            # translated answer
+    answer_english      : str            # original English answer
+    citations           : list[MultilingualCitationOut]
+    confidence          : str
+    sufficient          : bool
+    disclaimer          : str
+    detection_method    : str
+
+
+@app.post("/multilingual-query", response_model=MultilingualQueryResponse, tags=["phase-8"])
+def multilingual_query(req: MultilingualQueryRequest):
+    """
+    Phase 8 — Multilingual Q&A.
+
+    Supports English (en), Hindi (hi), and Kannada (kn).
+
+    Pipeline:
+      1. Detect language (or use explicit `language` parameter)
+      2. Translate query → English (before retrieval)
+      3. Run existing IP-SAKTI legal RAG pipeline (English only)
+      4. Translate grounded English answer → user language
+      5. Return answer + UNCHANGED citations + confidence
+
+    Key invariants:
+      - The authoritative corpus is NEVER duplicated or translated
+      - Section numbers, Act names, IPC codes are never translated
+      - Citations are never modified
+      - Confidence is recalculated from evidence, never from translation
+      - Disclaimer is always returned in the target language
+
+    Supply `language` to override auto-detection (recommended for short queries).
+    """
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question must not be empty")
+
+    question = req.question.strip()
+
+    # 1. Detect / override language
+    lang_result = _get_ml_detector().detect(question, override=req.language)
+
+    # 2. Translate query to English
+    translator     = _get_ml_translator()
+    english_query  = translator.normalize_query(question, lang_result)
+
+    # 3. Run Phase 2 legal RAG on the English query
+    rag_result = _get_retriever().retrieve(
+        english_query,
+        domain_filter=req.domain,
+    )
+    chunks     = rag_result["chunks"]
+    sufficient = rag_result["sufficient"]
+    confidence = rag_result["confidence"]
+    query_type = rag_result["query_type"]
+
+    if not sufficient or not chunks:
+        english_answer = (
+            "I could not find sufficient information in the "
+            "provided authoritative documents."
+        )
+    else:
+        context = "\n\n---\n\n".join(_chunk_to_context_block(c) for c in chunks)
+        english_answer = _get_llm().invoke([
+            {"role": "system", "content": _LEGAL_SYSTEM},
+            {"role": "user",   "content": (
+                f"Documents:\n\n{context}\n\n---\n\n"
+                f"Question: {english_query}\n\nAnswer:"
+            )},
+        ]).content.strip()
+
+    # 4. Build structured citations (never translated)
+    citations: list[MultilingualCitation] = []
+    seen: set[str] = set()
+    for chunk in chunks:
+        if chunk.chunk_id in seen:
+            continue
+        seen.add(chunk.chunk_id)
+        c = chunk.citation()
+        citations.append(MultilingualCitation(
+            document    = c["document"],
+            section     = c.get("section") or None,
+            subsection  = c.get("subsection") or None,
+            page        = c.get("page"),
+            source      = c["source"],
+            jurisdiction= "india",
+            chunk_id    = c["chunk_id"],
+        ))
+
+    # 5. Build GroundedAnswer and translate
+    from multilingual.schemas import GroundedAnswer
+    answer_obj = GroundedAnswer(
+        answer_text        = english_answer,
+        citations          = citations,
+        confidence         = confidence,
+        sufficient         = sufficient,
+        original_question  = question,
+        normalized_question= english_query,
+    )
+    translated_answer = translator.translate_answer(answer_obj, lang_result.language)
+
+    # 6. IP type detection (from Phase 5 router)
+    from routing.ip_router import _keyword_classify as _ip_kw
+    ip_types = [t.value for t in _ip_kw(english_query)]
+
+    return MultilingualQueryResponse(
+        language            = lang_result.language.value,
+        original_question   = question,
+        normalized_question = english_query,
+        ip_types            = ip_types,
+        jurisdiction        = req.jurisdiction or "india",
+        answer              = translated_answer.translated_text or english_answer,
+        answer_english      = english_answer,
+        citations           = [
+            MultilingualCitationOut(
+                document    = c.document,
+                section     = c.section,
+                subsection  = c.subsection,
+                page        = c.page,
+                source      = c.source,
+                jurisdiction= c.jurisdiction,
+                chunk_id    = c.chunk_id,
+            )
+            for c in translated_answer.citations
+        ],
+        confidence          = confidence,
+        sufficient          = sufficient,
+        disclaimer          = translated_answer.disclaimer,
+        detection_method    = lang_result.method,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 9 — Guardrails + Escalation + Privacy + Audit
+# ─────────────────────────────────────────────────────────────────────────────
+
+from guardrails.disclaimer  import add_disclaimer, get_disclaimer
+from guardrails.scope       import ScopeChecker, Scope
+from guardrails.confidence  import score_from_chunks, confidence_band, evidence_is_sufficient
+from guardrails.pipeline    import SafetyPipeline, SafetyResult, INJECTION_GUARD_PROMPT
+from escalation.facilitator import (
+    EscalationRequest as EscReq,
+    EscalationResponse as EscResp,
+    generate_request_id, should_escalate, escalation_reason,
+    create_escalation_request,
+)
+from audit.logger import get_logger
+
+_scope_checker: Optional[ScopeChecker]  = None
+_safety_pipeline: Optional[SafetyPipeline] = None
+
+
+def _get_scope_checker() -> ScopeChecker:
+    global _scope_checker
+    if _scope_checker is None:
+        _scope_checker = ScopeChecker(llm=_get_llm())
+    return _scope_checker
+
+
+def _get_safety_pipeline() -> SafetyPipeline:
+    global _safety_pipeline
+    if _safety_pipeline is None:
+        _safety_pipeline = SafetyPipeline(
+            scope_checker=_get_scope_checker(),
+            llm=_get_llm(),
+        )
+    return _safety_pipeline
+
+
+# ── Pydantic models ──────────────────────────────────────────────────────────
+
+class SafeQueryRequest(BaseModel):
+    question        : str
+    domain          : Optional[str] = None
+    language        : str           = "en"
+    privacy_mode    : bool          = False
+    request_human   : bool          = False
+
+
+class SafeQueryCitationOut(BaseModel):
+    document   : str
+    section    : Optional[str] = None
+    subsection : Optional[str] = None
+    page       : Optional[int] = None
+    source     : str
+    chunk_id   : str = ""
+
+
+class SafeQueryResponse(BaseModel):
+    request_id         : str
+    status             : str            # answered | abstained | escalated | out_of_scope
+    answer             : Optional[str]
+    confidence         : float
+    confidence_band    : str
+    citations          : list[SafeQueryCitationOut]
+    needs_human_review : bool
+    reason             : Optional[str]
+    disclaimer         : str
+    language           : str
+
+
+class EscalateRequest(BaseModel):
+    question    : str
+    reason      : str = "User requested human review"
+    ip_type     : str = "unknown"
+    jurisdiction: str = "india"
+    confidence  : float = 0.0
+    language    : str = "en"
+    privacy_mode: bool = False
+
+
+class EscalateResponse(BaseModel):
+    request_id        : str
+    status            : str
+    message           : str
+    estimated_response: str
+
+
+class DeleteResponse(BaseModel):
+    request_id: str
+    deleted   : bool
+    message   : str
+
+
+# ── Handlers ─────────────────────────────────────────────────────────────────
+
+def _safe_citations(raw_citations: list) -> list[SafeQueryCitationOut]:
+    out = []
+    for c in raw_citations:
+        if isinstance(c, dict):
+            out.append(SafeQueryCitationOut(
+                document   = c.get("document", ""),
+                section    = c.get("section") or c.get("subsection"),
+                subsection = c.get("subsection"),
+                page       = c.get("page"),
+                source     = c.get("source", ""),
+                chunk_id   = c.get("chunk_id", ""),
+            ))
+    return out
+
+
+def _generation_fn(query: str, chunks: list) -> str:
+    """Generate answer from chunks using the existing legal RAG prompt."""
+    context = "\n\n---\n\n".join(_chunk_to_context_block(c) for c in chunks)
+    # Inject the prompt-injection guard into the system prompt
+    guarded_system = _LEGAL_SYSTEM + INJECTION_GUARD_PROMPT
+    return _get_llm().invoke([
+        {"role": "system", "content": guarded_system},
+        {"role": "user",   "content": (
+            f"Documents:\n\n{context}\n\n---\n\nQuestion: {query}\n\nAnswer:"
+        )},
+    ]).content.strip()
+
+
+@app.post("/safe-query", response_model=SafeQueryResponse, tags=["phase-9"])
+def safe_query(req: SafeQueryRequest):
+    """
+    Phase 9 — Guardrailed legal Q&A.
+
+    Full safety pipeline:
+      1. Scope check   — rejects out-of-scope queries
+      2. Injection guard — sanitizes query before retrieval
+      3. Evidence check — abstains when no authoritative source
+      4. Confidence     — escalates when score < 0.60
+      5. Disclaimer     — always appended by backend (never LLM-generated)
+      6. Audit log      — privacy-mode redacts the question
+
+    Status values:
+      answered      — sufficient evidence, confident answer
+      abstained     — no authoritative evidence found
+      escalated     — low confidence or user requested human review
+      out_of_scope  — query unrelated to IP / TK / ABS
+    """
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question must not be empty")
+
+    request_id = generate_request_id()
+    question   = req.question.strip()
+    language   = req.language or "en"
+
+    retrieval_fn  = lambda q: _get_retriever().retrieve(q, domain_filter=req.domain)
+
+    result: SafetyResult = _get_safety_pipeline().run(
+        query        = question,
+        retrieval_fn = retrieval_fn,
+        generation_fn= _generation_fn,
+        request_id   = request_id,
+        language     = language,
+        user_wants_human = req.request_human,
+    )
+
+    # Escalation: store escalation record
+    if result.status == "escalated":
+        esc = create_escalation_request(
+            reason      = result.reason or "Escalated",
+            ip_type     = "unknown",
+            jurisdiction= "india",
+            confidence  = result.confidence,
+            question    = "" if req.privacy_mode else question,
+            language    = language,
+            privacy_mode= req.privacy_mode,
+            request_id  = request_id,
+        )
+        get_logger().log_escalation(esc)
+
+    # Audit log
+    chunks = retrieval_fn(question).get("chunks", []) if result.status == "answered" else []
+    get_logger().log(
+        request_id       = request_id,
+        language         = language,
+        ip_type          = "unknown",
+        jurisdiction     = "india",
+        retrieval_count  = len(chunks),
+        citation_count   = len(result.citations),
+        confidence       = result.confidence,
+        status           = result.status,
+        human_review     = result.needs_human_review,
+        scope            = (result.scope_result or {}).get("scope", "in_scope"),
+        escalation_reason= result.reason or "",
+        privacy_mode     = req.privacy_mode,
+    )
+
+    return SafeQueryResponse(
+        request_id         = request_id,
+        status             = result.status,
+        answer             = result.answer,
+        confidence         = result.confidence,
+        confidence_band    = result.confidence_band,
+        citations          = _safe_citations(result.citations),
+        needs_human_review = result.needs_human_review,
+        reason             = result.reason,
+        disclaimer         = get_disclaimer(language),
+        language           = language,
+    )
+
+
+@app.post("/escalate", response_model=EscalateResponse, tags=["phase-9"])
+def escalate(req: EscalateRequest):
+    """
+    Phase 9 — Manual escalation to human IP facilitator.
+
+    Use when the user explicitly wants a human to review their query.
+    The escalation request is logged and a tracking ID is returned.
+    """
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question must not be empty")
+
+    request_id = generate_request_id()
+    esc = create_escalation_request(
+        reason      = req.reason,
+        ip_type     = req.ip_type,
+        jurisdiction= req.jurisdiction,
+        confidence  = req.confidence,
+        question    = "" if req.privacy_mode else req.question.strip(),
+        language    = req.language,
+        privacy_mode= req.privacy_mode,
+        request_id  = request_id,
+    )
+    get_logger().log_escalation(esc)
+    get_logger().log(
+        request_id   = request_id,
+        language     = req.language,
+        ip_type      = req.ip_type,
+        jurisdiction = req.jurisdiction,
+        confidence   = req.confidence,
+        status       = "escalated",
+        human_review = True,
+        privacy_mode = req.privacy_mode,
+    )
+
+    return EscalateResponse(
+        request_id        = request_id,
+        status            = "pending",
+        message           = (
+            f"Your query has been escalated (ID: {request_id}). "
+            "A qualified IP facilitator will review it."
+        ),
+        estimated_response= "A qualified IP facilitator will review this query.",
+    )
+
+
+@app.delete("/conversation/{request_id}", response_model=DeleteResponse, tags=["phase-9"])
+def delete_conversation(request_id: str):
+    """
+    Phase 9 — Delete all stored data for a request ID.
+
+    Supports user's right to erasure (DPDP compliance prototype).
+    Removes the audit log record and any escalation records associated
+    with the request ID.
+    """
+    deleted = get_logger().delete(request_id)
+    return DeleteResponse(
+        request_id = request_id,
+        deleted    = deleted,
+        message    = (
+            f"All records for {request_id} have been deleted."
+            if deleted else
+            f"No records found for {request_id}."
+        ),
+    )
+
+
+@app.get("/audit/{request_id}", tags=["phase-9"])
+def get_audit_record(request_id: str):
+    """
+    Phase 9 — Retrieve audit log for a specific request.
+    Returns only metadata — never raw question text in privacy_mode records.
+    """
+    record = get_logger().get(request_id)
+    if not record:
+        raise HTTPException(status_code=404, detail=f"No record for {request_id}")
+    # Never expose raw question through audit API
+    record.pop("question", None)
+    return record
