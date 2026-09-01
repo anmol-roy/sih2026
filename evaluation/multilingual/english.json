@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ML001",
+    "language": "en",
+    "question": "What does Section 3(p) of the Patents Act say?",
+    "expected_section": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "ML002",
+    "language": "en",
+    "question": "Can a traditional Ayurvedic formulation containing neem and turmeric be patented?",
+    "expected_section": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "ML003",
+    "language": "en",
+    "question": "What are the requirements for trademark registration in India?",
+    "expected_section": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark"
+  },
+  {
+    "id": "ML004",
+    "language": "en",
+    "question": "What is the TKDL and how does it relate to patent prior art?",
+    "expected_section": null,
+    "expected_document_id": "tkdl_overview",
+    "expected_domain": "patent"
+  },
+  {
+    "id": "ML005",
+    "language": "en",
+    "question": "What does Section 3(d) of the Patents Act say about pharmaceutical patents?",
+    "expected_section": "3(d)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent"
+  }
+]

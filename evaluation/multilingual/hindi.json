@@ -1,0 +1,52 @@
+[
+  {
+    "id": "ML001",
+    "language": "hi",
+    "question": "पेटेंट अधिनियम की धारा 3(p) क्या कहती है?",
+    "english_equivalent": "What does Section 3(p) of the Patents Act say?",
+    "expected_section": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent",
+    "expected_terms_preserved": ["Section 3(p)", "Patents Act, 1970"]
+  },
+  {
+    "id": "ML002",
+    "language": "hi",
+    "question": "क्या नीम और हल्दी से बनी पारंपरिक आयुर्वेदिक दवा पर पेटेंट मिल सकता है?",
+    "english_equivalent": "Can a traditional Ayurvedic formulation containing neem and turmeric be patented?",
+    "expected_section": "3(p)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent",
+    "expected_terms_preserved": ["Section 3(p)"]
+  },
+  {
+    "id": "ML003",
+    "language": "hi",
+    "question": "भारत में ट्रेडमार्क पंजीकरण के लिए क्या आवश्यकताएं हैं?",
+    "english_equivalent": "What are the requirements for trademark registration in India?",
+    "expected_section": null,
+    "expected_document_id": "trademarks_act_1999",
+    "expected_domain": "trademark",
+    "expected_terms_preserved": ["Trade Marks Act, 1999"]
+  },
+  {
+    "id": "ML004",
+    "language": "hi",
+    "question": "TKDL क्या है और यह पेटेंट पूर्व कला से कैसे संबंधित है?",
+    "english_equivalent": "What is the TKDL and how does it relate to patent prior art?",
+    "expected_section": null,
+    "expected_document_id": "tkdl_overview",
+    "expected_domain": "patent",
+    "expected_terms_preserved": ["TKDL"]
+  },
+  {
+    "id": "ML005",
+    "language": "hi",
+    "question": "पेटेंट अधिनियम की धारा 3(d) फार्मास्युटिकल पेटेंट के बारे में क्या कहती है?",
+    "english_equivalent": "What does Section 3(d) of the Patents Act say about pharmaceutical patents?",
+    "expected_section": "3(d)",
+    "expected_document_id": "patents_act_1970",
+    "expected_domain": "patent",
+    "expected_terms_preserved": ["Section 3(d)", "Patents Act, 1970"]
+  }
+]
