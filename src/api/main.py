@@ -58,8 +58,11 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 app = FastAPI(
     title="IP-SAKTI Sahayak",
-    description="Indian IP legal RAG + Invention analysis + Patentability check + Routed Q&A",
-    version="5.0.0",
+    description=(
+        "Indian IP legal RAG + Invention analysis + "
+        "Patentability check + Routed Q&A + Jurisdiction layer"
+    ),
+    version="6.0.0",
 )
 
 app.add_middleware(
@@ -607,7 +610,7 @@ def _handle_patentability(
 
 @app.get("/", tags=["health"])
 def root():
-    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "5.0.0"}
+    return {"status": "ok", "service": "IP-SAKTI Sahayak", "version": "6.0.0"}
 
 
 @app.get("/health", tags=["health"])

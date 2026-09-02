@@ -1,0 +1,277 @@
+[
+  {
+    "case_id": "JUR001",
+    "category": "india_only",
+    "query": "What does Section 3(p) of the Patents Act say about traditional knowledge?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Patents Act, 1970"],
+    "notes": "Section 3(p) is purely Indian patent law."
+  },
+  {
+    "case_id": "JUR002",
+    "category": "india_only",
+    "query": "What are the grounds for refusal of trademark registration in India?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "trademark",
+    "expected_sources": ["The Trade Marks Act, 1999"],
+    "notes": "Trade Marks Act 1999 is the governing Indian law."
+  },
+  {
+    "case_id": "JUR003",
+    "category": "india_only",
+    "query": "How does IP India process a patent application?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "expected_sources": ["The Patents Act, 1970"],
+    "notes": "IP India is the Indian Patent Office."
+  },
+  {
+    "case_id": "JUR004",
+    "category": "india_only",
+    "query": "What is the term of copyright protection under the Copyright Act 1957?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "copyright",
+    "expected_sources": ["The Copyright Act, 1957"],
+    "notes": "Indian Copyright Act 1957."
+  },
+  {
+    "case_id": "JUR005",
+    "category": "india_only",
+    "query": "How is a geographical indication registered under Indian law?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "gi",
+    "expected_sources": ["The Geographical Indications of Goods Act, 1999"],
+    "notes": "GI Act 1999 is Indian law."
+  },
+  {
+    "case_id": "JUR006",
+    "category": "india_only",
+    "query": "What does the TKDL say about Ayurvedic formulations?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "traditional_knowledge",
+    "expected_sources": ["Traditional Knowledge Digital Library — Overview"],
+    "notes": "TKDL is an Indian initiative."
+  },
+  {
+    "case_id": "JUR007",
+    "category": "india_only",
+    "query": "What are the requirements for design registration under the Designs Act 2000?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "design",
+    "expected_sources": ["The Designs Act, 2000"],
+    "notes": "Indian Designs Act."
+  },
+  {
+    "case_id": "JUR008",
+    "category": "india_only",
+    "query": "What does Section 3(d) of the Patents Act say about pharmaceutical patents?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "expected_sources": ["The Patents Act, 1970"],
+    "notes": "Section 3(d) is a uniquely Indian provision."
+  },
+  {
+    "case_id": "JUR009",
+    "category": "india_only",
+    "query": "How does AYUSH regulate traditional medicine formulations in India?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "traditional_knowledge",
+    "expected_sources": ["Ayurvedic Formulary of India"],
+    "notes": "Ministry of AYUSH is an Indian government body."
+  },
+  {
+    "case_id": "JUR010",
+    "category": "india_only",
+    "query": "What is compulsory licensing under the Indian Patents Act?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "expected_sources": ["The Patents Act, 1970"],
+    "notes": "Section 84 of the Indian Patents Act."
+  },
+  {
+    "case_id": "JUR011",
+    "category": "international_only",
+    "query": "What is the Patent Cooperation Treaty (PCT)?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Patent Cooperation Treaty (PCT) — Overview"],
+    "notes": "PCT is a WIPO-administered international treaty."
+  },
+  {
+    "case_id": "JUR012",
+    "category": "international_only",
+    "query": "What does the TRIPS Agreement say about patent protection?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "TRIPS is a WTO/WIPO international agreement."
+  },
+  {
+    "case_id": "JUR013",
+    "category": "international_only",
+    "query": "How does the Paris Convention define the right of priority?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Paris Convention for the Protection of Industrial Property"],
+    "notes": "Paris Convention is an international IP treaty."
+  },
+  {
+    "case_id": "JUR014",
+    "category": "international_only",
+    "query": "What is the Madrid System for international trademark registration?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "trademark",
+    "expected_sources": ["Madrid System for the International Registration of Marks — Overview"],
+    "notes": "Madrid System is administered by WIPO."
+  },
+  {
+    "case_id": "JUR015",
+    "category": "international_only",
+    "query": "What does the Berne Convention say about moral rights?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "copyright",
+    "expected_sources": ["Berne Convention for the Protection of Literary and Artistic Works"],
+    "notes": "Berne Convention is an international copyright treaty."
+  },
+  {
+    "case_id": "JUR016",
+    "category": "international_only",
+    "query": "How do I file a PCT international patent application with WIPO?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Patent Cooperation Treaty (PCT) — Overview"],
+    "notes": "PCT filing is an international procedure."
+  },
+  {
+    "case_id": "JUR017",
+    "category": "international_only",
+    "query": "What are the minimum standards required by TRIPS for copyright protection?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "copyright",
+    "expected_sources": ["Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "TRIPS Part II Section 1 covers copyright."
+  },
+  {
+    "case_id": "JUR018",
+    "category": "international_only",
+    "query": "How does the Hague System work for international design protection?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "design",
+    "expected_sources": ["WIPO Intellectual Property Handbook"],
+    "notes": "Hague System is WIPO-administered."
+  },
+  {
+    "case_id": "JUR019",
+    "category": "international_only",
+    "query": "What is the WIPO definition of intellectual property?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["WIPO Intellectual Property Handbook"],
+    "notes": "WIPO is the international IP organisation."
+  },
+  {
+    "case_id": "JUR020",
+    "category": "international_only",
+    "query": "What obligations does TRIPS impose on member countries for patent protection?",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "TRIPS Article 27-34 covers patents."
+  },
+  {
+    "case_id": "JUR021",
+    "category": "both",
+    "query": "How do Indian patentability requirements compare with the PCT and TRIPS?",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "patent",
+    "expected_india_sources": ["The Patents Act, 1970"],
+    "expected_international_sources": ["Patent Cooperation Treaty (PCT) — Overview", "Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "Explicit comparison — should trigger BOTH mode."
+  },
+  {
+    "case_id": "JUR022",
+    "category": "both",
+    "query": "Compare India's copyright term with the Berne Convention minimum.",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "copyright",
+    "expected_india_sources": ["The Copyright Act, 1957"],
+    "expected_international_sources": ["Berne Convention for the Protection of Literary and Artistic Works"],
+    "notes": "India's 60-year term vs Berne's life+50 minimum."
+  },
+  {
+    "case_id": "JUR023",
+    "category": "both",
+    "query": "How does Indian trademark law differ from the Madrid System?",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "trademark",
+    "expected_india_sources": ["The Trade Marks Act, 1999"],
+    "expected_international_sources": ["Madrid System for the International Registration of Marks — Overview"],
+    "notes": "National vs international filing system comparison."
+  },
+  {
+    "case_id": "JUR024",
+    "category": "both",
+    "query": "Is India's compulsory licensing provision consistent with TRIPS Article 31?",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "patent",
+    "expected_india_sources": ["The Patents Act, 1970"],
+    "expected_international_sources": ["Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "Direct comparison between Section 84 and TRIPS Art 31."
+  },
+  {
+    "case_id": "JUR025",
+    "category": "both",
+    "query": "How does India's traditional knowledge protection interact with international IP law?",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "traditional_knowledge",
+    "expected_india_sources": ["Traditional Knowledge Digital Library — Overview"],
+    "expected_international_sources": ["Agreement on Trade-Related Aspects of Intellectual Property Rights (TRIPS)"],
+    "notes": "TKDL as defensive mechanism vs TRIPS flexibilities."
+  },
+  {
+    "case_id": "JUR026",
+    "category": "override_india",
+    "query": "What are the patentability requirements?",
+    "jurisdiction_override": "india",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "notes": "Generic query — user explicitly selects India."
+  },
+  {
+    "case_id": "JUR027",
+    "category": "override_international",
+    "query": "What are the patentability requirements?",
+    "jurisdiction_override": "international",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "notes": "Same generic query — user explicitly selects international."
+  },
+  {
+    "case_id": "JUR028",
+    "category": "override_both",
+    "query": "What are the patentability requirements?",
+    "jurisdiction_override": "both",
+    "expected_jurisdiction": "both",
+    "expected_ip_type": "patent",
+    "notes": "Same generic query — user requests both."
+  },
+  {
+    "case_id": "JUR029",
+    "category": "india_only",
+    "query": "What is the procedure for filing a patent application at the Indian Patent Office?",
+    "expected_jurisdiction": "india",
+    "expected_ip_type": "patent",
+    "expected_sources": ["The Patents Act, 1970"],
+    "notes": "IPO procedure is specifically Indian."
+  },
+  {
+    "case_id": "JUR030",
+    "category": "international_only",
+    "query": "Explain the priority right under the Paris Convention.",
+    "expected_jurisdiction": "international",
+    "expected_ip_type": "patent",
+    "expected_sources": ["Paris Convention for the Protection of Industrial Property"],
+    "notes": "Priority right under Article 4 of the Paris Convention."
+  }
+]
