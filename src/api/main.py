@@ -1417,3 +1417,156 @@ def get_audit_record(request_id: str):
     # Never expose raw question through audit API
     record.pop("question", None)
     return record
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 10 — Knowledge Graph + Agentic Multi-Source Orchestration
+# ─────────────────────────────────────────────────────────────────────────────
+
+from agents.orchestrator import IPSaktiOrchestrator, select_tools
+from graph.graph_store   import KnowledgeGraph
+
+_orchestrator_p10: Optional[IPSaktiOrchestrator] = None
+_knowledge_graph : Optional[KnowledgeGraph]      = None
+
+
+def _get_knowledge_graph() -> KnowledgeGraph:
+    global _knowledge_graph
+    if _knowledge_graph is None:
+        _knowledge_graph = KnowledgeGraph.load()
+    return _knowledge_graph
+
+
+def _get_orchestrator_p10() -> IPSaktiOrchestrator:
+    global _orchestrator_p10
+    if _orchestrator_p10 is None:
+        _orchestrator_p10 = IPSaktiOrchestrator(
+            llm       = _get_llm(),
+            embeddings= _get_embeddings(),
+            graph     = _get_knowledge_graph(),
+        )
+    return _orchestrator_p10
+
+
+class OrchestrateRequest(BaseModel):
+    query       : str
+    language    : str  = "en"
+    dry_run     : bool = False   # True → return tool selection only, no LLM calls
+
+
+class ToolStatusOut(BaseModel):
+    tool  : str
+    status: str
+
+
+class CitationP10Out(BaseModel):
+    source_id   : str
+    source_type : str
+    title       : str
+    section     : Optional[str] = None
+    subsection  : Optional[str] = None
+    page        : Optional[int] = None
+    source_name : str
+    jurisdiction: str
+    authority   : str
+    chunk_id    : str
+
+
+class GraphRelationOut(BaseModel):
+    entity    : str
+    tk_sources: list[str]
+    patents   : list[str]
+
+
+class OrchestrateResponse(BaseModel):
+    answer             : Optional[str]
+    tools_used         : list[str]
+    tool_status        : dict[str, str]
+    citations          : list[CitationP10Out]
+    confidence         : str
+    issues             : list[str]
+    sources_consulted  : int
+    graph_relations    : list[GraphRelationOut]
+    selected_tools_dry : list[str]   # always returned (even if dry_run=False)
+    language           : str
+
+
+@app.post("/orchestrate", response_model=OrchestrateResponse, tags=["phase-10"])
+def orchestrate(req: OrchestrateRequest):
+    """
+    Phase 10 — Agentic multi-source orchestration.
+
+    The orchestrator automatically:
+      1. Determines which tools are needed (legal / patent / TK / formulation / ABS / international)
+      2. Calls each tool and collects evidence
+      3. Populates the knowledge graph with retrieved relationships
+      4. Fuses and ranks evidence by authority
+      5. Detects issues (Section 3(p), 3(d), ABS relevance, etc.)
+      6. Generates a grounded, cited answer
+
+    Use `dry_run=true` to see which tools would be selected without making LLM calls.
+
+    Example query:
+      "I developed an Ayurvedic formulation using neem and turmeric.
+       Can I patent it in India, and could traditional knowledge affect my application?"
+    """
+    if not req.query.strip():
+        raise HTTPException(status_code=400, detail="query must not be empty")
+
+    query = req.query.strip()
+
+    # Always compute tool selection (useful even in dry_run)
+    selected_tools = [t.split(":")[0] for t in select_tools(query)]
+
+    if req.dry_run:
+        return OrchestrateResponse(
+            answer=None,
+            tools_used=[],
+            tool_status={t: "not_called" for t in selected_tools},
+            citations=[],
+            confidence="unknown",
+            issues=[],
+            sources_consulted=0,
+            graph_relations=[],
+            selected_tools_dry=selected_tools,
+            language=req.language,
+        )
+
+    result = _get_orchestrator_p10().run(query)
+
+    # Graph relations
+    graph_relations = [
+        GraphRelationOut(
+            entity    = gr.get("entity", ""),
+            tk_sources= gr.get("tk_sources", []),
+            patents   = gr.get("patents", []),
+        )
+        for gr in result.get("evidence", {}).get("graph_relations", [])
+    ]
+
+    return OrchestrateResponse(
+        answer            = result.get("answer"),
+        tools_used        = result.get("tools_used", []),
+        tool_status       = result.get("tool_status", {}),
+        citations         = [
+            CitationP10Out(
+                source_id   = c.get("source_id", ""),
+                source_type = c.get("source_type", ""),
+                title       = c.get("title", ""),
+                section     = c.get("section"),
+                subsection  = c.get("subsection"),
+                page        = c.get("page"),
+                source_name = c.get("source_name", ""),
+                jurisdiction= c.get("jurisdiction", "india"),
+                authority   = c.get("authority", "secondary"),
+                chunk_id    = c.get("chunk_id", ""),
+            )
+            for c in result.get("citations", [])
+        ],
+        confidence        = result.get("confidence", "low"),
+        issues            = result.get("issues", []),
+        sources_consulted = result.get("sources_consulted", 0),
+        graph_relations   = graph_relations,
+        selected_tools_dry= selected_tools,
+        language          = req.language,
+    )

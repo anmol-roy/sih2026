@@ -1,0 +1,62 @@
+{
+  "nodes": [
+    {"id": "neem",         "type": "ingredient",           "properties": {"scientific_name": "Azadirachta indica"}},
+    {"id": "turmeric",     "type": "ingredient",           "properties": {"scientific_name": "Curcuma longa"}},
+    {"id": "ashwagandha",  "type": "ingredient",           "properties": {"scientific_name": "Withania somnifera"}},
+    {"id": "giloy",        "type": "ingredient",           "properties": {"scientific_name": "Tinospora cordifolia"}},
+    {"id": "tulsi",        "type": "ingredient",           "properties": {"scientific_name": "Ocimum sanctum"}},
+    {"id": "amla",         "type": "ingredient",           "properties": {"scientific_name": "Phyllanthus emblica"}},
+    {"id": "brahmi",       "type": "ingredient",           "properties": {"scientific_name": "Bacopa monnieri"}},
+
+    {"id": "patents_act_1970",       "type": "act",          "properties": {"title": "The Patents Act, 1970", "jurisdiction": "india"}},
+    {"id": "trademarks_act_1999",    "type": "act",          "properties": {"title": "The Trade Marks Act, 1999", "jurisdiction": "india"}},
+    {"id": "copyright_act_1957",     "type": "act",          "properties": {"title": "The Copyright Act, 1957", "jurisdiction": "india"}},
+    {"id": "biodiversity_act_2002",  "type": "act",          "properties": {"title": "The Biological Diversity Act, 2002", "jurisdiction": "india"}},
+
+    {"id": "section_3p",   "type": "legal_section",        "properties": {"title": "Section 3(p) - Traditional Knowledge Exclusion"}},
+    {"id": "section_3d",   "type": "legal_section",        "properties": {"title": "Section 3(d) - New Forms of Known Substances"}},
+    {"id": "section_3e",   "type": "legal_section",        "properties": {"title": "Section 3(e) - Mixture of Known Substances"}},
+    {"id": "section_3j",   "type": "legal_section",        "properties": {"title": "Section 3(j) - Plants/Animals Exclusion"}},
+
+    {"id": "tkdl_overview",      "type": "traditional_knowledge", "properties": {"source": "CSIR/Ministry of AYUSH"}},
+    {"id": "ayurveda_formulary", "type": "traditional_knowledge", "properties": {"source": "Ministry of AYUSH"}},
+
+    {"id": "trips_agreement",  "type": "treaty", "properties": {"jurisdiction": "international", "source": "WTO/WIPO"}},
+    {"id": "pct_overview",     "type": "treaty", "properties": {"jurisdiction": "international", "source": "WIPO"}},
+    {"id": "paris_convention", "type": "treaty", "properties": {"jurisdiction": "international", "source": "WIPO"}},
+    {"id": "nagoya_protocol",  "type": "treaty", "properties": {"jurisdiction": "international", "source": "UN/WIPO"}},
+
+    {"id": "india",         "type": "jurisdiction", "properties": {}},
+    {"id": "international", "type": "jurisdiction", "properties": {}}
+  ],
+
+  "relationships": [
+    {"source": "neem",        "relation": "documented_in",         "target": "tkdl_overview",       "properties": {}},
+    {"source": "neem",        "relation": "documented_in",         "target": "ayurveda_formulary",  "properties": {}},
+    {"source": "turmeric",    "relation": "documented_in",         "target": "tkdl_overview",       "properties": {}},
+    {"source": "turmeric",    "relation": "documented_in",         "target": "ayurveda_formulary",  "properties": {}},
+    {"source": "ashwagandha", "relation": "documented_in",         "target": "tkdl_overview",       "properties": {}},
+    {"source": "ashwagandha", "relation": "documented_in",         "target": "ayurveda_formulary",  "properties": {}},
+    {"source": "giloy",       "relation": "documented_in",         "target": "tkdl_overview",       "properties": {}},
+    {"source": "tulsi",       "relation": "documented_in",         "target": "tkdl_overview",       "properties": {}},
+    {"source": "amla",        "relation": "documented_in",         "target": "ayurveda_formulary",  "properties": {}},
+    {"source": "brahmi",      "relation": "documented_in",         "target": "ayurveda_formulary",  "properties": {}},
+
+    {"source": "tkdl_overview",      "relation": "relevant_to",   "target": "section_3p",          "properties": {}},
+    {"source": "ayurveda_formulary", "relation": "relevant_to",   "target": "section_3p",          "properties": {}},
+
+    {"source": "section_3p",  "relation": "belongs_to",           "target": "patents_act_1970",    "properties": {}},
+    {"source": "section_3d",  "relation": "belongs_to",           "target": "patents_act_1970",    "properties": {}},
+    {"source": "section_3e",  "relation": "belongs_to",           "target": "patents_act_1970",    "properties": {}},
+    {"source": "section_3j",  "relation": "belongs_to",           "target": "patents_act_1970",    "properties": {}},
+
+    {"source": "biodiversity_act_2002", "relation": "has_jurisdiction", "target": "india",         "properties": {}},
+    {"source": "patents_act_1970",      "relation": "has_jurisdiction", "target": "india",         "properties": {}},
+    {"source": "trips_agreement",       "relation": "has_jurisdiction", "target": "international", "properties": {}},
+    {"source": "pct_overview",          "relation": "has_jurisdiction", "target": "international", "properties": {}},
+    {"source": "paris_convention",      "relation": "has_jurisdiction", "target": "international", "properties": {}},
+
+    {"source": "nagoya_protocol",       "relation": "relevant_to",  "target": "biodiversity_act_2002", "properties": {}},
+    {"source": "trips_agreement",       "relation": "relevant_to",  "target": "section_3p",            "properties": {}}
+  ]
+}

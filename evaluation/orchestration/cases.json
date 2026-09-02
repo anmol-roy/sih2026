@@ -1,0 +1,155 @@
+[
+  {
+    "id": "ORC001", "difficulty": "simple",
+    "query": "What does Section 3(p) of the Patents Act say?",
+    "expected_tools": ["legal_search"],
+    "unexpected_tools": ["formulation_classifier", "abs_check", "international_search"],
+    "expected_evidence_types": ["legal"],
+    "notes": "Simple legal lookup — only legal_search should fire."
+  },
+  {
+    "id": "ORC002", "difficulty": "simple",
+    "query": "What is a trademark and how do I register it in India?",
+    "expected_tools": ["legal_search"],
+    "unexpected_tools": ["patent_search", "tk_search", "international_search"],
+    "expected_evidence_types": ["legal"],
+    "notes": "Trademark query — legal_search with trademark domain."
+  },
+  {
+    "id": "ORC003", "difficulty": "simple",
+    "query": "What is the term of a patent in India?",
+    "expected_tools": ["legal_search"],
+    "unexpected_tools": ["formulation_classifier", "abs_check"],
+    "expected_evidence_types": ["legal"],
+    "notes": "Simple patent law question."
+  },
+  {
+    "id": "ORC004", "difficulty": "medium",
+    "query": "Can I patent my herbal formulation containing neem and turmeric?",
+    "expected_tools": ["legal_search", "formulation_classifier", "tk_search", "patent_search"],
+    "unexpected_tools": ["international_search"],
+    "expected_evidence_types": ["legal", "traditional_knowledge"],
+    "expected_issues": ["3(p)"],
+    "notes": "Formulation + patent — requires 4 tools."
+  },
+  {
+    "id": "ORC005", "difficulty": "medium",
+    "query": "Does using ashwagandha in my product create any ABS compliance issues?",
+    "expected_tools": ["formulation_classifier", "abs_check", "legal_search"],
+    "unexpected_tools": ["international_search"],
+    "expected_evidence_types": ["legal", "abs"],
+    "notes": "ABS question — abs_check is mandatory."
+  },
+  {
+    "id": "ORC006", "difficulty": "medium",
+    "query": "Is neem documented in traditional knowledge sources?",
+    "expected_tools": ["tk_search"],
+    "expected_evidence_types": ["traditional_knowledge"],
+    "notes": "TK-specific lookup."
+  },
+  {
+    "id": "ORC007", "difficulty": "medium",
+    "query": "What is the PCT and how does international patent filing work?",
+    "expected_tools": ["international_search"],
+    "unexpected_tools": ["formulation_classifier", "abs_check", "tk_search"],
+    "expected_evidence_types": ["international"],
+    "notes": "International-only query."
+  },
+  {
+    "id": "ORC008", "difficulty": "medium",
+    "query": "What does the TRIPS Agreement say about pharmaceutical patents?",
+    "expected_tools": ["international_search", "legal_search"],
+    "expected_evidence_types": ["international"],
+    "notes": "TRIPS = international + optional India legal."
+  },
+  {
+    "id": "ORC009", "difficulty": "medium",
+    "query": "How does India's patent law compare with the PCT?",
+    "expected_tools": ["legal_search", "international_search"],
+    "expected_evidence_types": ["legal", "international"],
+    "notes": "Both jurisdictions — both sources needed."
+  },
+  {
+    "id": "ORC010", "difficulty": "medium",
+    "query": "I developed an Ayurvedic formulation with giloy and tulsi for immunity. Is it patentable?",
+    "expected_tools": ["formulation_classifier", "legal_search", "tk_search", "patent_search"],
+    "expected_evidence_types": ["legal", "traditional_knowledge"],
+    "expected_issues": ["3(p)"],
+    "notes": "Ayurvedic formulation patentability check."
+  },
+  {
+    "id": "ORC011", "difficulty": "complex",
+    "query": "I developed an Ayurvedic formulation using neem and turmeric. Can I patent it in India, and could traditional knowledge affect my application?",
+    "expected_tools": ["formulation_classifier", "legal_search", "patent_search", "tk_search", "abs_check"],
+    "expected_evidence_types": ["legal", "traditional_knowledge", "patent"],
+    "expected_issues": ["3(p)"],
+    "notes": "Full multi-tool complex query from spec."
+  },
+  {
+    "id": "ORC012", "difficulty": "complex",
+    "query": "Does using biological resources from India in my pharmaceutical product require any compliance steps?",
+    "expected_tools": ["formulation_classifier", "abs_check", "legal_search"],
+    "expected_evidence_types": ["legal", "abs"],
+    "notes": "ABS + biodiversity compliance."
+  },
+  {
+    "id": "ORC013", "difficulty": "complex",
+    "query": "I created a new herbal formulation using a traditional plant. Can I patent it and what international treaties are relevant?",
+    "expected_tools": ["formulation_classifier", "legal_search", "patent_search", "tk_search", "international_search"],
+    "expected_evidence_types": ["legal", "traditional_knowledge", "international"],
+    "notes": "Patent + TK + ABS + international."
+  },
+  {
+    "id": "ORC014", "difficulty": "complex",
+    "query": "What prior art exists for neem-based skin formulations and how does Indian law treat such patents?",
+    "expected_tools": ["patent_search", "legal_search", "tk_search"],
+    "expected_evidence_types": ["legal", "patent", "traditional_knowledge"],
+    "notes": "Prior art + legal combined."
+  },
+  {
+    "id": "ORC015", "difficulty": "complex",
+    "query": "How does the Nagoya Protocol affect Indian traditional knowledge and what sections of the Biodiversity Act are relevant?",
+    "expected_tools": ["legal_search", "international_search"],
+    "expected_evidence_types": ["legal", "international"],
+    "notes": "Nagoya + Biodiversity Act = India + international."
+  },
+  {
+    "id": "ORC016", "difficulty": "complex",
+    "query": "Can I file a PCT application for my Ayurvedic formulation and what Section 3 exclusions might apply in India?",
+    "expected_tools": ["legal_search", "international_search", "formulation_classifier"],
+    "expected_evidence_types": ["legal", "international"],
+    "expected_issues": ["3(p)"],
+    "notes": "PCT + Section 3 combined."
+  },
+  {
+    "id": "ORC017", "difficulty": "simple",
+    "query": "What are the grounds for revocation of a patent under Indian law?",
+    "expected_tools": ["legal_search"],
+    "unexpected_tools": ["formulation_classifier", "abs_check", "international_search", "tk_search"],
+    "expected_evidence_types": ["legal"],
+    "notes": "Specific Indian patent law question."
+  },
+  {
+    "id": "ORC018", "difficulty": "medium",
+    "query": "Is turmeric documented in TKDL and does it affect patent applications?",
+    "expected_tools": ["tk_search", "legal_search", "patent_search"],
+    "expected_evidence_types": ["legal", "traditional_knowledge"],
+    "expected_issues": ["3(p)"],
+    "notes": "TKDL prior art + patent law."
+  },
+  {
+    "id": "ORC019", "difficulty": "medium",
+    "query": "What is the Madrid System and how does it relate to trademark registration in India?",
+    "expected_tools": ["international_search", "legal_search"],
+    "expected_evidence_types": ["international", "legal"],
+    "notes": "Madrid System = international + Indian trademark law."
+  },
+  {
+    "id": "ORC020", "difficulty": "complex",
+    "query": "My invention combines a traditional Unani formulation with a novel delivery mechanism. What IP protections are available and what are the risks?",
+    "expected_tools": ["formulation_classifier", "legal_search", "patent_search", "tk_search", "abs_check"],
+    "expected_evidence_types": ["legal", "traditional_knowledge", "patent"],
+    "expected_issues": ["3(p)", "3(e)"],
+    "notes": "Most complex case — all 5 major tools needed."
+  }
+]
