@@ -1573,3 +1573,168 @@ def orchestrate(req: OrchestrateRequest):
         selected_tools_dry= selected_tools,
         language          = req.language,
     )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 11 — Unified Pipeline Endpoint
+# ─────────────────────────────────────────────────────────────────────────────
+
+from pipeline.main          import IPSaktiPipeline
+from pipeline.response_model import PipelineResponse as P11Response
+
+_pipeline_v2: Optional[IPSaktiPipeline] = None
+
+
+def _get_pipeline_v2() -> IPSaktiPipeline:
+    global _pipeline_v2
+    if _pipeline_v2 is None:
+        _pipeline_v2 = IPSaktiPipeline(
+            llm       = _get_llm(),
+            embeddings= _get_embeddings(),
+        )
+    return _pipeline_v2
+
+
+class AskV2Request(BaseModel):
+    question             : str
+    language             : Optional[str] = None   # "en" | "hi" | "kn" | auto-detect
+    jurisdiction         : Optional[str] = None   # "india" | "international" | "both"
+    ip_type              : Optional[str] = None   # "patent" | "trademark" | …
+    request_human        : bool          = False
+    privacy_mode         : bool          = False
+
+
+class CitationV2Out(BaseModel):
+    source_id   : str
+    document    : str
+    section     : Optional[str] = None
+    subsection  : Optional[str] = None
+    page        : Optional[int] = None
+    source_name : str
+    jurisdiction: str
+    authority   : str
+    chunk_id    : str
+    verified    : bool
+
+
+class ConflictV2Out(BaseModel):
+    source_a   : str
+    source_b   : str
+    description: str
+    resolution : str
+
+
+class AskV2Response(BaseModel):
+    status             : str
+    answer             : Optional[str]
+    answer_english     : Optional[str]     = None
+    language           : str
+    original_question  : str
+    normalized_question: str
+    ip_types           : list[str]
+    jurisdiction       : str
+    citations          : list[CitationV2Out]
+    citation_coverage  : float
+    confidence         : float
+    confidence_band    : str
+    needs_human_review : bool
+    reason             : Optional[str]
+    tools_used         : list[str]
+    sources_consulted  : int
+    issues             : list[str]
+    conflicts          : list[ConflictV2Out]
+    formulation        : Optional[dict]
+    disclaimer         : str
+    request_id         : Optional[str]
+
+
+@app.post("/ask-v2", response_model=AskV2Response, tags=["phase-11"])
+def ask_v2(req: AskV2Request):
+    """
+    Phase 11 — Unified Pipeline (all phases wired together).
+
+    Single endpoint that runs the complete 18-step pipeline:
+
+      1. Language detection (or override)
+      2. Scope check
+      3. Query normalisation (translate to English)
+      4. Jurisdiction detection (or override)
+      5. IP type detection (or override)
+      6. Formulation classification (when relevant)
+      7. Agentic orchestration (tool selection + evidence collection)
+      8. Conflict detection
+      9. Multi-signal confidence calculation
+      10. Evidence sufficiency check → answer or abstain/escalate
+      11. SOURCE_ID-labelled context construction
+      12. Answer generation (LLM cites SOURCE_IDs — never invents)
+      13. Citation verification (backend-constructed)
+      14. Disclaimer injection (backend — never LLM)
+      15. Translation to user language
+      16. Audit logging
+
+    Supports: en, hi, kn  |  patent, trademark, copyright, design, gi, TK
+              india, international, both  |  privacy_mode, request_human
+
+    Status values:
+      answered      — sufficient evidence, citations verified
+      abstained     — insufficient evidence found
+      escalated     — low confidence or human requested
+      out_of_scope  — query not related to IP / TK / ABS
+    """
+    if not req.question.strip():
+        raise HTTPException(status_code=400, detail="question must not be empty")
+
+    result: P11Response = _get_pipeline_v2().process(
+        question              = req.question.strip(),
+        language_override     = req.language,
+        jurisdiction_override = req.jurisdiction,
+        ip_type_override      = req.ip_type,
+        request_human         = req.request_human,
+        privacy_mode          = req.privacy_mode,
+    )
+
+    return AskV2Response(
+        status             = result.status,
+        answer             = result.answer,
+        answer_english     = result.answer_english,
+        language           = result.language,
+        original_question  = result.original_question,
+        normalized_question= result.normalized_question,
+        ip_types           = result.ip_types,
+        jurisdiction       = result.jurisdiction,
+        citations          = [
+            CitationV2Out(
+                source_id   = c.source_id,
+                document    = c.document,
+                section     = c.section,
+                subsection  = c.subsection,
+                page        = c.page,
+                source_name = c.source_name,
+                jurisdiction= c.jurisdiction,
+                authority   = c.authority,
+                chunk_id    = c.chunk_id,
+                verified    = c.verified,
+            )
+            for c in result.citations
+        ],
+        citation_coverage  = result.citation_coverage,
+        confidence         = result.confidence,
+        confidence_band    = result.confidence_band,
+        needs_human_review = result.needs_human_review,
+        reason             = result.reason,
+        tools_used         = result.tools_used,
+        sources_consulted  = result.sources_consulted,
+        issues             = result.issues,
+        conflicts          = [
+            ConflictV2Out(
+                source_a   = c.source_a,
+                source_b   = c.source_b,
+                description= c.description,
+                resolution = c.resolution,
+            )
+            for c in result.conflicts
+        ],
+        formulation        = result.formulation,
+        disclaimer         = result.disclaimer,
+        request_id         = result.request_id,
+    )
