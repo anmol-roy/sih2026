@@ -44,6 +44,12 @@ from pipeline.response_model    import PipelineResponse, ConflictRecord
 from pipeline.citation_verifier import build_citations, build_sourced_context, verify_citations
 from pipeline.confidence_engine import calculate_confidence
 from pipeline.conflict_detector import detect_conflicts, prefer_authoritative
+from pipeline.version_filter    import filter_by_version, prefer_current_versions
+from pipeline.answer_formatter  import (
+    STRUCTURED_ANSWER_SYSTEM, STRUCTURED_ANSWER_USER,
+    ensure_disclaimer_section,
+)
+from pipeline.debug_logger      import make_logger
 
 from multilingual.detector      import LanguageDetector
 from multilingual.schemas       import Language
