@@ -61,7 +61,9 @@ _IN_SCOPE_KW = re.compile(
     \bWIPO\b             | \bsection\s*3\b    | \bformulation\b   |
     \bherbal\b           | \bayurved\b        | \bsiddha\b        |
     \bunani\b            | \btraditional\s*med\b                   |
-    \bIP\s*India\b       | \bIndia\s*Code\b
+    \bIP\s*India\b       | \bIndia\s*Code\b   |
+    पेटेंट | ट्रेडमार्क | कॉपीराइट | अधिनियम | धारा | आविष्कार |
+    ಪೇಟೆಂಟ್ | ಟ್ರೇಡ್‌ಮಾರ್ಕ್ | ಕಾಯ್ದೆ | ಸೆಕ್ಷನ್ | ಆವಿಷ್ಕಾರ
     """,
     re.VERBOSE | re.IGNORECASE,
 )
