@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from formulation.schemas import Ingredient
@@ -89,11 +89,11 @@ class FormulationExtractor:
 
     Parameters
     ----------
-    llm : optional shared ChatGroq instance.
+    llm : optional shared ChatMistralAI instance.
           If None, keyword-only extraction is used (no LLM call).
     """
 
-    def __init__(self, llm: Optional[ChatGroq] = None):
+    def __init__(self, llm: Optional[ChatMistralAI] = None):
         self._llm = llm   # may be None — keyword fallback is used in that case
 
     def extract(self, description: str) -> list[Ingredient]:

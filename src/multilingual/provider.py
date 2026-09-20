@@ -83,7 +83,7 @@ class TranslationProvider:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM-based provider (default — uses existing ChatGroq)
+# LLM-based provider (default — uses existing ChatMistralAI)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _TO_ENGLISH_PROMPT = """\
@@ -128,7 +128,7 @@ English text:
 
 class LLMTranslationProvider(TranslationProvider):
     """
-    Translation via the existing ChatGroq LLM.
+    Translation via the existing ChatMistralAI LLM.
     Always available — used as the default / fallback.
     """
 
@@ -137,8 +137,13 @@ class LLMTranslationProvider(TranslationProvider):
 
     def _get_llm(self):
         if self._llm is None:
-            from langchain_groq import ChatGroq
-            self._llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+            import os
+            from langchain_mistralai import ChatMistralAI
+            self._llm = ChatMistralAI(
+                model="mistral-large-latest",
+                temperature=0,
+                api_key=os.getenv("MISTRAL_API_KEY")
+            )
         return self._llm
 
     def translate_to_english(self, text: str, source_language: Language) -> str:

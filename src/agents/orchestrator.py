@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -175,7 +175,7 @@ class IPSaktiOrchestrator:
 
     Parameters
     ----------
-    llm        : shared ChatGroq
+    llm        : shared ChatMistralAI
     embeddings : shared HuggingFaceEmbeddings
     graph      : optional pre-loaded KnowledgeGraph
     language   : response language code ("en" | "hi" | "kn")
@@ -183,7 +183,7 @@ class IPSaktiOrchestrator:
 
     def __init__(
         self,
-        llm       : ChatGroq,
+        llm       : ChatMistralAI,
         embeddings: HuggingFaceEmbeddings,
         graph     : Optional[KnowledgeGraph] = None,
         language  : str = "en",

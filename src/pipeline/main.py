@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -136,7 +136,7 @@ class IPSaktiPipeline:
 
     def __init__(
         self,
-        llm       : ChatGroq,
+        llm       : ChatMistralAI,
         embeddings: HuggingFaceEmbeddings,
         log_audit : bool = True,
         privacy_mode: bool = False,

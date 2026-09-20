@@ -4,7 +4,6 @@ langchain-community==0.3.23
 langchain-core==0.3.61
 langchain-text-splitters==0.3.8
 langchain-qdrant==0.2.0
-langchain-groq==0.3.2
 langchain-huggingface==0.1.2
 
 # Vector store
@@ -19,7 +18,7 @@ rank-bm25==0.2.2
 pypdf==5.4.0
 
 # LLM
-groq==0.23.1
+mistralai==1.5.1
 
 # API
 fastapi==0.115.12
@@ -31,3 +30,5 @@ pydantic==2.11.4
 
 # Multilingual (Phase 8)
 langdetect==1.0.9
+
+# Keep a single compatible LangChain Hugging Face version for this stack

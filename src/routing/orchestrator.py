@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -95,7 +95,7 @@ def _build_citations(chunks: list[LegalChunk]) -> list[dict]:
 
 
 def _generate_answer(
-    llm: ChatGroq,
+    llm: ChatMistralAI,
     query: str,
     chunks: list[LegalChunk],
     domain_prompt: str,
@@ -141,7 +141,7 @@ class QueryOrchestrator:
     def __init__(
         self,
         embeddings: HuggingFaceEmbeddings,
-        llm: ChatGroq,
+        llm: ChatMistralAI,
     ):
         self._llm          = llm
         self._ip_router    = IPRouter(llm=llm)

@@ -144,7 +144,7 @@ class ScopeChecker:
 
     Parameters
     ----------
-    llm              : optional shared ChatGroq
+    llm              : optional shared ChatMistralAI
     use_llm_threshold: keyword confidence below this triggers LLM
     """
 

@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -143,13 +143,13 @@ class FormulationAnalyzer:
     Parameters
     ----------
     embeddings : shared HuggingFaceEmbeddings
-    llm        : shared ChatGroq
+    llm        : shared ChatMistralAI
     """
 
     def __init__(
         self,
         embeddings: HuggingFaceEmbeddings,
-        llm       : ChatGroq,
+        llm       : ChatMistralAI,
     ):
         self._llm        = llm
         self._extractor  = FormulationExtractor(llm=llm)

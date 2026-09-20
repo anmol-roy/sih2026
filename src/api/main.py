@@ -18,16 +18,22 @@ Run with:
 
 from __future__ import annotations
 
+import os
 import sys
+import torch
 from pathlib import Path
 from typing import Any, Optional
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel
+
+# Force CPU mode for torch to avoid meta tensor errors
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+torch.set_default_device("cpu")
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
@@ -72,12 +78,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Custom exception handler to ensure CORS headers are added to all responses
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    from fastapi.responses import JSONResponse
+    import traceback
+    
+    error_detail = str(exc) if not isinstance(exc, HTTPException) else exc.detail
+    status_code = getattr(exc, "status_code", 500)
+    
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": error_detail},
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Lazy-loaded singletons
 # ─────────────────────────────────────────────────────────────────────────────
 
 _embeddings    : Optional[HuggingFaceEmbeddings] = None
-_llm           : Optional[ChatGroq]              = None
+_llm           : Optional[ChatMistralAI]         = None
 _retriever     : Optional[HybridRetriever]       = None
 _extractor     : Optional[InventionExtractor]    = None
 _feat_extractor: Optional[FeatureExtractor]      = None
@@ -97,15 +120,21 @@ def _get_embeddings() -> HuggingFaceEmbeddings:
     global _embeddings
     if _embeddings is None:
         _embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"device": "cpu"}
         )
     return _embeddings
 
 
-def _get_llm() -> ChatGroq:
+def _get_llm() -> ChatMistralAI:
     global _llm
     if _llm is None:
-        _llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+        _llm = ChatMistralAI(
+            model="mistral-tiny",
+            temperature=0,
+            api_key=os.getenv("MISTRAL_API_KEY")
+        )
     return _llm
 
 

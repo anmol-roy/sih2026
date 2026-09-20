@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ingestion.schema import Invention, InventionFeature, ClaimRepresentation
@@ -221,10 +221,12 @@ def _p4_user_prompt(pat4_package: dict) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ReportGenerator:
-    def __init__(self, llm: Optional[ChatGroq] = None):
-        self._llm = llm or ChatGroq(
-            model="llama-3.3-70b-versatile",
+    def __init__(self, llm: Optional[ChatMistralAI] = None):
+        import os
+        self._llm = llm or ChatMistralAI(
+            model="mistral-large-latest",
             temperature=0,
+            api_key=os.getenv("MISTRAL_API_KEY")
         )
 
     # ── Phase 3 ───────────────────────────────────────────────────────────

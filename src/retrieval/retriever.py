@@ -225,7 +225,8 @@ class HybridRetriever:
             self._embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
 
         print("Connecting to Qdrant …")
-        self._qdrant_client = QdrantClient(path=QDRANT_PATH)
+        from qdrant_singleton import get_qdrant_client
+        self._qdrant_client = get_qdrant_client()
         self._vector_store = QdrantVectorStore(
             client=self._qdrant_client,
             collection_name=COLLECTION_NAME,

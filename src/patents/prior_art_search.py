@@ -208,7 +208,8 @@ class PriorArtSearcher:
         self._pool_size      = final_pool_size
         self._cutoff         = cutoff_date
 
-        self._qdrant  = QdrantClient(path=QDRANT_PATH)
+        from qdrant_singleton import get_qdrant_client
+        self._qdrant  = get_qdrant_client()
         existing      = {c.name for c in self._qdrant.get_collections().collections}
 
         if PATENT_COLLECTION in existing:

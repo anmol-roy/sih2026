@@ -23,7 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_mistralai import ChatMistralAI
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -201,13 +201,13 @@ class JurisdictionRouter:
 
     Parameters
     ----------
-    llm              : optional shared ChatGroq instance
+    llm              : optional shared ChatMistralAI instance
     use_llm_threshold: keyword confidence below this value triggers LLM fallback
     """
 
     def __init__(
         self,
-        llm: Optional[ChatGroq] = None,
+        llm: Optional[ChatMistralAI] = None,
         use_llm_threshold: float = 0.60,
     ):
         self._llm       = llm
