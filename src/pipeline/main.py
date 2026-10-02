@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -136,7 +136,7 @@ class IPSaktiPipeline:
 
     def __init__(
         self,
-        llm       : ChatMistralAI,
+        llm       : ChatGoogleGenerativeAI,
         embeddings: HuggingFaceEmbeddings,
         log_audit : bool = True,
         privacy_mode: bool = False,
@@ -340,12 +340,14 @@ class IPSaktiPipeline:
 
     def _generate(self, question: str, context: str) -> str:
         try:
-            return self._llm.invoke([
+            from utils.llm_utils import extract_llm_text
+            res = self._llm.invoke([
                 {"role": "system", "content": _GENERATION_SYSTEM},
                 {"role": "user",   "content": _GENERATION_USER.format(
                     context=context, question=question
                 )},
-            ]).content.strip()
+            ])
+            return extract_llm_text(res)
         except Exception as e:
             return f"Answer generation failed: {e}"
 

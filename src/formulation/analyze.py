@@ -27,7 +27,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -143,13 +143,13 @@ class FormulationAnalyzer:
     Parameters
     ----------
     embeddings : shared HuggingFaceEmbeddings
-    llm        : shared ChatMistralAI
+    llm        : shared ChatGoogleGenerativeAI
     """
 
     def __init__(
         self,
         embeddings: HuggingFaceEmbeddings,
-        llm       : ChatMistralAI,
+        llm       : ChatGoogleGenerativeAI,
     ):
         self._llm        = llm
         self._extractor  = FormulationExtractor(llm=llm)
@@ -389,6 +389,7 @@ class FormulationAnalyzer:
             {"role": "user",   "content": f"{context}\n\n---\nWrite the Preliminary Guidance:"},
         ]
         try:
-            return self._llm.invoke(messages).content.strip()
+            from utils.llm_utils import extract_llm_text
+            return extract_llm_text(self._llm.invoke(messages))
         except Exception as e:
             return f"Report generation failed: {e}\n\nEvidence collected:\n{context}"

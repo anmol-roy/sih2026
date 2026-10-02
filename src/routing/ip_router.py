@@ -12,12 +12,13 @@ malformed JSON, ensuring the router never crashes.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from routing.schemas import IPType, QueryRoute
@@ -113,15 +114,16 @@ class IPRouter:
 
     Parameters
     ----------
-    llm : optional shared ChatMistralAI instance
+    llm : optional shared ChatGoogleGenerativeAI instance
     """
 
-    def __init__(self, llm: Optional[ChatMistralAI] = None):
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
         import os
-        self._llm = llm or ChatMistralAI(
-            model="mistral-large-latest",
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self._llm = llm or ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("MISTRAL_API_KEY")
+            google_api_key=api_key
         )
 
     def classify(self, query: str) -> QueryRoute:
@@ -130,13 +132,27 @@ class IPRouter:
 
         Returns a QueryRoute with primary type, all types, confidence, reason.
         """
+        # Routing is deterministic for the supported domains.  Avoid spending
+        # an answer-generation request merely to classify a query; deployments
+        # that need LLM routing can explicitly opt in.
+        if os.getenv("LLM_ROUTING_ENABLED", "false").lower() != "true":
+            ip_types = _keyword_classify(query)
+            return QueryRoute(
+                ip_types=ip_types,
+                primary=ip_types[0],
+                confidence=0.60,
+                reason="Keyword-based routing",
+                is_multi=len(ip_types) > 1,
+            )
+
         messages = [
             {"role": "system", "content": _SYSTEM},
             {"role": "user",   "content": _USER.format(query=query.strip())},
         ]
 
         try:
-            raw = self._llm.invoke(messages).content.strip()
+            from utils.llm_utils import extract_llm_text
+            raw = extract_llm_text(self._llm.invoke(messages))
             # Strip markdown fences
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
@@ -158,8 +174,10 @@ class IPRouter:
             confidence = max(0.0, min(1.0, confidence))
             reason     = str(data.get("reason", "LLM classification"))
 
-        except (json.JSONDecodeError, KeyError, TypeError, ValueError):
-            # Fallback to keyword classification
+        except Exception:
+            # A provider error (for example, a 429 quota response) must use
+            # the same deterministic classification fallback as malformed LLM
+            # output.  Classification should never prevent retrieval.
             ip_types   = _keyword_classify(query)
             primary    = ip_types[0]
             confidence = 0.60

@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ingestion.schema import Invention, InventionFeature, ClaimRepresentation
@@ -221,12 +221,13 @@ def _p4_user_prompt(pat4_package: dict) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ReportGenerator:
-    def __init__(self, llm: Optional[ChatMistralAI] = None):
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
         import os
-        self._llm = llm or ChatMistralAI(
-            model="mistral-large-latest",
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self._llm = llm or ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("MISTRAL_API_KEY")
+            google_api_key=api_key
         )
 
     # ── Phase 3 ───────────────────────────────────────────────────────────
@@ -245,7 +246,8 @@ class ReportGenerator:
             {"role": "system", "content": _P3_SYSTEM},
             {"role": "user",   "content": user_prompt},
         ]
-        full_text = self._llm.invoke(messages).content.strip()
+        from utils.llm_utils import extract_llm_text
+        full_text = extract_llm_text(self._llm.invoke(messages))
 
         citations = []
         seen: set[str] = set()
@@ -312,7 +314,8 @@ class ReportGenerator:
             {"role": "system", "content": _P4_SYSTEM},
             {"role": "user",   "content": user_prompt},
         ]
-        full_text = self._llm.invoke(messages).content.strip()
+        from utils.llm_utils import extract_llm_text
+        full_text = extract_llm_text(self._llm.invoke(messages))
 
         # ── Citations ─────────────────────────────────────────────────────
         citations = []

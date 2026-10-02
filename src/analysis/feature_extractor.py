@@ -29,7 +29,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ingestion.schema import Invention, InventionFeature
@@ -71,12 +71,13 @@ _USER = "Invention:\n\n{text}\n\nJSON array of features:"
 # ---------------------------------------------------------------------------
 
 class FeatureExtractor:
-    def __init__(self, llm: Optional[ChatMistralAI] = None):
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
         import os
-        self._llm = llm or ChatMistralAI(
-            model="mistral-large-latest",
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self._llm = llm or ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
-            api_key=os.getenv("MISTRAL_API_KEY")
+            google_api_key=api_key
         )
 
     def extract_from_text(self, description: str) -> list[InventionFeature]:
@@ -85,7 +86,8 @@ class FeatureExtractor:
             {"role": "system", "content": _SYSTEM},
             {"role": "user",   "content": _USER.format(text=description.strip())},
         ]
-        return self._parse_response(self._llm.invoke(messages).content)
+        from utils.llm_utils import extract_llm_text
+        return self._parse_response(extract_llm_text(self._llm.invoke(messages)))
 
     def extract_from_invention(self, invention: Invention) -> list[InventionFeature]:
         """

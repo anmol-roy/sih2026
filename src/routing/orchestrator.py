@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -98,7 +98,7 @@ def _build_citations(chunks: list[LegalChunk]) -> list[dict]:
 
 
 def _generate_answer(
-    llm: ChatMistralAI,
+    llm: ChatGoogleGenerativeAI,
     query: str,
     chunks: list[LegalChunk],
     domain_prompt: str,
@@ -111,10 +111,12 @@ def _generate_answer(
     if jurisdiction_note:
         sys_prompt = jurisdiction_note + "\n\n" + sys_prompt
     user_msg = f"Documents:\n\n{context}\n\n---\n\nQuestion: {query}\n\nAnswer:"
-    return llm.invoke([
+    from utils.llm_utils import extract_llm_text
+    res = llm.invoke([
         {"role": "system", "content": sys_prompt},
         {"role": "user",   "content": user_msg},
-    ]).content.strip()
+    ])
+    return extract_llm_text(res)
 
 
 _COMPARISON_SYSTEM = """\
@@ -144,7 +146,7 @@ class QueryOrchestrator:
     def __init__(
         self,
         embeddings: HuggingFaceEmbeddings,
-        llm: ChatMistralAI,
+        llm: ChatGoogleGenerativeAI,
     ):
         self._llm          = llm
         self._ip_router    = IPRouter(llm=llm)
@@ -330,10 +332,12 @@ class QueryOrchestrator:
             f"Write the comparison summary:"
         )
         try:
-            return self._llm.invoke([
+            from utils.llm_utils import extract_llm_text
+            res = self._llm.invoke([
                 {"role": "system", "content": _COMPARISON_SYSTEM},
                 {"role": "user",   "content": user_msg},
-            ]).content.strip()
+            ])
+            return extract_llm_text(res)
         except Exception:
             return "Comparison could not be generated."
 

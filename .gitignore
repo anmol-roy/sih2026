@@ -4,3 +4,11 @@
 __pycache__/
 /requirement
 /qdrant_db
+
+# Local runtime and evaluation artifacts
+/*.log
+/*_results.json
+/bm25_index.pkl
+/q.json
+/query.json
+/resp.json

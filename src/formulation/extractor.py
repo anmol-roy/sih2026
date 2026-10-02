@@ -21,7 +21,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from formulation.schemas import Ingredient
@@ -89,11 +89,11 @@ class FormulationExtractor:
 
     Parameters
     ----------
-    llm : optional shared ChatMistralAI instance.
+    llm : optional shared ChatGoogleGenerativeAI instance.
           If None, keyword-only extraction is used (no LLM call).
     """
 
-    def __init__(self, llm: Optional[ChatMistralAI] = None):
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
         self._llm = llm   # may be None — keyword fallback is used in that case
 
     def extract(self, description: str) -> list[Ingredient]:
@@ -116,7 +116,8 @@ class FormulationExtractor:
             {"role": "user",   "content": _USER.format(text=text.strip())},
         ]
         try:
-            raw = self._llm.invoke(messages).content.strip()
+            from utils.llm_utils import extract_llm_text
+            raw = extract_llm_text(self._llm.invoke(messages))
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
             names = json.loads(raw)

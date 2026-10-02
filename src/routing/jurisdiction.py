@@ -23,7 +23,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from langchain_mistralai import ChatMistralAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from pydantic import BaseModel, Field
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -172,13 +172,13 @@ class JurisdictionRouter:
 
     Parameters
     ----------
-    llm              : optional shared ChatMistralAI instance
+    llm              : optional shared ChatGoogleGenerativeAI instance
     use_llm_threshold: keyword confidence below this value triggers LLM fallback
     """
 
     def __init__(
         self,
-        llm: Optional[ChatMistralAI] = None,
+        llm: Optional[ChatGoogleGenerativeAI] = None,
         use_llm_threshold: float = 0.60,
     ):
         self._llm       = llm
@@ -222,10 +222,12 @@ class JurisdictionRouter:
             return kw_result   # no LLM available, return keyword result
 
         try:
-            raw = self._llm.invoke([
+            from utils.llm_utils import extract_llm_text
+            res = self._llm.invoke([
                 {"role": "system", "content": _SYSTEM},
                 {"role": "user",   "content": _USER.format(query=query.strip())},
-            ]).content.strip()
+            ])
+            raw = extract_llm_text(res)
 
             raw = re.sub(r"^```(?:json)?\s*", "", raw)
             raw = re.sub(r"\s*```$", "", raw)
