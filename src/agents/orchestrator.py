@@ -33,7 +33,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -175,7 +175,7 @@ class IPSaktiOrchestrator:
 
     Parameters
     ----------
-    llm        : shared ChatGroq
+    llm        : shared ChatGoogleGenerativeAI
     embeddings : shared HuggingFaceEmbeddings
     graph      : optional pre-loaded KnowledgeGraph
     language   : response language code ("en" | "hi" | "kn")
@@ -183,7 +183,7 @@ class IPSaktiOrchestrator:
 
     def __init__(
         self,
-        llm       : ChatGroq,
+        llm       : ChatGoogleGenerativeAI,
         embeddings: HuggingFaceEmbeddings,
         graph     : Optional[KnowledgeGraph] = None,
         language  : str = "en",
@@ -368,10 +368,12 @@ class IPSaktiOrchestrator:
             f"---\n\nQuestion: {query}\n\nAnswer:"
         )
         try:
-            return self._llm.invoke([
+            from utils.llm_utils import extract_llm_text
+            res = self._llm.invoke([
                 {"role": "system", "content": ORCHESTRATOR_SYSTEM},
                 {"role": "user",   "content": user_msg},
-            ]).content.strip()
+            ])
+            return extract_llm_text(res)
         except Exception as e:
             return f"Answer generation failed: {e}"
 

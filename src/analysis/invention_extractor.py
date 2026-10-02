@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ingestion.schema import Invention
@@ -58,10 +58,13 @@ _USER_TEMPLATE = "Invention description:\n\n{description}\n\nJSON:"
 # ---------------------------------------------------------------------------
 
 class InventionExtractor:
-    def __init__(self, llm: Optional[ChatGroq] = None):
-        self._llm = llm or ChatGroq(
-            model="llama-3.3-70b-versatile",
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
+        import os
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self._llm = llm or ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
+            google_api_key=api_key
         )
 
     def extract(self, description: str) -> Invention:
@@ -74,8 +77,9 @@ class InventionExtractor:
             {"role": "user",   "content": _USER_TEMPLATE.format(description=description.strip())},
         ]
 
+        from utils.llm_utils import extract_llm_text
         response = self._llm.invoke(messages)
-        raw = response.content.strip()
+        raw = extract_llm_text(response)
 
         # Strip markdown code fences if present
         raw = re.sub(r"^```(?:json)?\s*", "", raw)

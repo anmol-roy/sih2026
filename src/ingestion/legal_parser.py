@@ -34,8 +34,9 @@ _CHAPTER_RE = re.compile(
 )
 
 # "3. What are not inventions.—"  /  "10A. Some heading"
+# Require at least 5 chars of heading to avoid matching footnote numbers like "3."
 _SECTION_RE = re.compile(
-    r"^(\d+[A-Z]?)\.\s+(.+?)[\.\—\-–]?\s*$",
+    r"^(\d+[A-Z]?)\.\s+(.{5,})[\.\—\-–]?\s*$",
     re.IGNORECASE,
 )
 
@@ -231,7 +232,6 @@ class LegalDocumentParser:
                 base = node.section_label or ""
                 subsection_str = f"{base}({node.label})" if base else f"({node.label})"
             elif node.kind == "explanation":
-                # Attach explanation to the parent section
                 subsection_str = None
 
             chapter_str = node.chapter_label or None
@@ -264,7 +264,89 @@ class LegalDocumentParser:
             )
             chunks.append(chunk)
 
+        # Post-process: fix misattributed Section 3 subsections
+        # (common in Indian PDFs where footnotes break section tracking)
+        chunks = self._fix_section3_subsections(chunks)
         return chunks
+
+    # ------------------------------------------------------------------
+    # Section 3 correction pass
+    # ------------------------------------------------------------------
+
+    # Known Section 3 subsection content signatures
+    _SEC3_SIGNATURES: dict[str, str] = {
+        "traditional knowledge": "3(p)",
+        "aggregation or duplication of known properties": "3(p)",
+        "in effect, is traditional knowledge": "3(p)",
+        "new form of a known substance": "3(d)",
+        "mere discovery of a new property": "3(d)",
+        "which does not result in enhancement of the known efficacy": "3(d)",
+        "mere discovery of any new property or new use": "3(d)",
+        "mixture of known compounds": "3(e)",
+        "mere admixture resulting only in the aggregation": "3(e)",
+        "mere arrangement or re-arrangement or duplication": "3(f)",
+        "method of agriculture or horticulture": "3(h)",
+        "any process for the medicinal": "3(i)",
+        "method of treatment of human beings": "3(i)",
+        "plants and animals": "3(j)",
+        "essentially biological process": "3(j)",
+        "mathematical or business method": "3(k)",
+        "computer programme per se": "3(k)",
+        "literary, dramatic, musical or artistic work": "3(l)",
+        "scheme or rule or method of performing": "3(m)",
+        "presentation of information": "3(n)",
+        "topography of integrated circuits": "3(o)",
+        "an invention which in effect is traditional knowledge": "3(p)",
+    }
+
+    def _fix_section3_subsections(self, chunks: list[LegalChunk]) -> list[LegalChunk]:
+        """
+        Scan chunks for Section 3 subsection content that was misattributed
+        to wrong sections (e.g. labelled Section 6 because footnote "6." was
+        parsed as a section heading).
+
+        Only applies when document_id matches a Patents Act document.
+        """
+        if "patent" not in self.meta.get("document_id", "").lower():
+            return chunks
+
+        corrected = []
+        for chunk in chunks:
+            txt_lower = chunk.text.lower()
+            fixed = False
+            for signature, correct_sub in self._SEC3_SIGNATURES.items():
+                if signature in txt_lower:
+                    # Only fix if currently NOT labelled Section 3
+                    if chunk.section != "Section 3":
+                        sec_num = correct_sub.split("(")[0]   # "3"
+                        corrected_chunk = LegalChunk(
+                            chunk_id       = chunk.chunk_id.replace(
+                                f"sec{chunk.section.replace('Section ','') if chunk.section else '?'}",
+                                f"sec{sec_num}"
+                            ) if chunk.section else chunk.chunk_id,
+                            document_id    = chunk.document_id,
+                            title          = chunk.title,
+                            source         = chunk.source,
+                            source_url     = chunk.source_url,
+                            document_type  = chunk.document_type,
+                            domain         = chunk.domain,
+                            authority_level= chunk.authority_level,
+                            chapter        = chunk.chapter,
+                            section        = f"Section {sec_num}",
+                            subsection     = correct_sub,
+                            page           = chunk.page,
+                            language       = chunk.language,
+                            version        = chunk.version,
+                            effective_date = chunk.effective_date,
+                            last_verified  = chunk.last_verified,
+                            text           = chunk.text,
+                        )
+                        corrected.append(corrected_chunk)
+                        fixed = True
+                        break
+            if not fixed:
+                corrected.append(chunk)
+        return corrected
 
     # ------------------------------------------------------------------
     # Helpers

@@ -75,7 +75,8 @@ class BM25Store:
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "wb") as fh:
             pickle.dump({"chunks": self._chunks, "index": self._index}, fh)
-        print(f"BM25 index saved → {path}  ({len(self._chunks)} chunks)")
+        # Keep startup/request logging compatible with the default Windows console.
+        print(f"BM25 index saved: {path}  ({len(self._chunks)} chunks)")
 
     @classmethod
     def load(cls, path: Path = _DEFAULT_PATH) -> "BM25Store":
@@ -89,5 +90,5 @@ class BM25Store:
         store = cls()
         store._chunks = data["chunks"]
         store._index = data["index"]
-        print(f"BM25 index loaded ← {path}  ({len(store._chunks)} chunks)")
+        print(f"BM25 index loaded: {path}  ({len(store._chunks)} chunks)")
         return store

@@ -136,7 +136,8 @@ class PatentSearcher:
         self._emb          = embeddings
         self._top_k_ret    = top_k_retrieval
         self._top_k_final  = top_k_final
-        self._qdrant       = QdrantClient(path=QDRANT_PATH)
+        from qdrant_singleton import get_qdrant_client
+        self._qdrant       = get_qdrant_client()
         self._bm25: Optional[BM25Store] = None
         self._use_patents   = False  # flipped to True if patent collection exists
 

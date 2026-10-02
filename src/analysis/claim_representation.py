@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 from ingestion.schema import Invention, InventionFeature, ClaimRepresentation
@@ -104,10 +104,13 @@ JSON:"""
 # ---------------------------------------------------------------------------
 
 class ClaimBuilder:
-    def __init__(self, llm: Optional[ChatGroq] = None):
-        self._llm = llm or ChatGroq(
-            model="llama-3.3-70b-versatile",
+    def __init__(self, llm: Optional[ChatGoogleGenerativeAI] = None):
+        import os
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        self._llm = llm or ChatGoogleGenerativeAI(
+            model="gemini-3.6-flash",
             temperature=0,
+            google_api_key=api_key
         )
 
     def build(
@@ -129,7 +132,8 @@ class ClaimBuilder:
             )},
         ]
 
-        raw = self._llm.invoke(messages).content.strip()
+        from utils.llm_utils import extract_llm_text
+        raw = extract_llm_text(self._llm.invoke(messages))
         raw = re.sub(r"^```(?:json)?\s*", "", raw)
         raw = re.sub(r"\s*```$", "", raw)
 

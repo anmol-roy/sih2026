@@ -83,7 +83,7 @@ class TranslationProvider:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# LLM-based provider (default — uses existing ChatGroq)
+# LLM-based provider (default — uses existing ChatGoogleGenerativeAI)
 # ─────────────────────────────────────────────────────────────────────────────
 
 _TO_ENGLISH_PROMPT = """\
@@ -128,7 +128,7 @@ English text:
 
 class LLMTranslationProvider(TranslationProvider):
     """
-    Translation via the existing ChatGroq LLM.
+    Translation via the existing ChatGoogleGenerativeAI LLM.
     Always available — used as the default / fallback.
     """
 
@@ -137,8 +137,14 @@ class LLMTranslationProvider(TranslationProvider):
 
     def _get_llm(self):
         if self._llm is None:
-            from langchain_groq import ChatGroq
-            self._llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+            import os
+            from langchain_google_genai import ChatGoogleGenerativeAI
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            self._llm = ChatGoogleGenerativeAI(
+                model="gemini-3.6-flash",
+                temperature=0,
+                google_api_key=api_key
+            )
         return self._llm
 
     def translate_to_english(self, text: str, source_language: Language) -> str:
@@ -152,7 +158,8 @@ class LLMTranslationProvider(TranslationProvider):
             language_name=LANGUAGE_NAMES.get(source_language, source_language.value),
             text=protected,
         )
-        result = self._get_llm().invoke(prompt).content.strip()
+        from utils.llm_utils import extract_llm_text
+        result = extract_llm_text(self._get_llm().invoke(prompt))
 
         # Restore any protected terms the LLM may have left as placeholders
         return restore_terms(result, mapping)
@@ -168,7 +175,8 @@ class LLMTranslationProvider(TranslationProvider):
             language_name=LANGUAGE_NAMES.get(target_language, target_language.value),
             text=protected,
         )
-        result = self._get_llm().invoke(prompt).content.strip()
+        from utils.llm_utils import extract_llm_text
+        result = extract_llm_text(self._get_llm().invoke(prompt))
 
         return restore_terms(result, mapping)
 

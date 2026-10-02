@@ -1,0 +1,69 @@
+{
+  "Test 1 - English": {
+    "input": "Can I patent my Ayurvedic formulation containing neem and turmeric in India?",
+    "detected": "en",
+    "normalized": "Can I patent my Ayurvedic formulation containing neem and turmeric in India?",
+    "response_language": "en",
+    "answer": "An error occurred while processing your query. Please try again or rephrase your question in English, Hindi, or Kannada.",
+    "citations_count": 0,
+    "confidence": "low",
+    "sufficient": false,
+    "elapsed_sec": 77.9,
+    "status": "PASS",
+    "issues": []
+  },
+  "Test 2 - Hindi": {
+    "input": "क्या मैं नीम और हल्दी से बनी अपनी आयुर्वेदिक फॉर्मूलेशन का भारत में पेटेंट करा सकता हूँ?",
+    "detected": "hi",
+    "normalized": "Can I patent my Ayurvedic formulation made from **Azadirachta indica (Neem)** and **Curcuma longa (Turmeric)** under the **Patents Act, 1970** in India?\n\n*(Note: If the formulation includes other ingredients, their scientific names should also be preserved in the translation.)*",
+    "response_language": "hi",
+    "answer": "मुझे प्रदान किए गए अधिकृत दस्तावेज़ों में पर्याप्त जानकारी नहीं मिली।",
+    "citations_count": 0,
+    "confidence": "low",
+    "sufficient": false,
+    "elapsed_sec": 1.5,
+    "status": "PASS",
+    "issues": []
+  },
+  "Test 3 - Kannada": {
+    "input": "ನನ್ನ ಬೇವು ಮತ್ತು ಅರಿಶಿನದ ಆಯುರ್ವೇದಿಕ್ ಫಾರ್ಮುಲೇಶನ್‌ಗೆ ಭಾರತದಲ್ಲಿ ಪೇಟೆಂಟ್ ಪಡೆಯಬಹುದೇ?",
+    "detected": "kn",
+    "normalized": "Can an **Ayurvedic formulation** containing **ginger (Zingiber officinale)** and **turmeric (Curcuma longa)** be patented in India under the **Patents Act, 1970**?\n\n*(Note: If the query includes specific legal references like IPC, CPC, or TKDL, they should be preserved in the translation. Since they were not present in the source, they are omitted here.)*",
+    "response_language": "kn",
+    "answer": "ಒದಗಿಸಲಾದ ಅಧಿಕೃತ ದಾಖಲೆಗಳಲ್ಲಿ ಸಾಕಷ್ಟು ಮಾಹಿತಿ ಕಂಡುಬಂದಿಲ್ಲ.",
+    "citations_count": 0,
+    "confidence": "low",
+    "sufficient": false,
+    "elapsed_sec": 1.7,
+    "status": "PASS",
+    "issues": []
+  },
+  "Test 4 - Hinglish": {
+    "input": "Mujhe neem aur turmeric se banaye formulation ka India mein patent lena hai.",
+    "detected": "hi",
+    "normalized": "I would like to file a patent in India for a formulation prepared using **Azadirachta indica (neem)** and **Curcuma longa (turmeric)**.",
+    "response_language": "hi",
+    "answer": "मुझे प्रदान किए गए अधिकृत दस्तावेज़ों में पर्याप्त जानकारी नहीं मिली।",
+    "citations_count": 0,
+    "confidence": "low",
+    "sufficient": false,
+    "elapsed_sec": 0.8,
+    "status": "PASS",
+    "issues": []
+  },
+  "Test 5 - English Tech Terms": {
+    "input": "What does Section 3(p) of the Patents Act mean for traditional knowledge?",
+    "detected": "en",
+    "normalized": "What does Section 3(p) of the Patents Act mean for traditional knowledge?",
+    "response_language": "en",
+    "answer": "An error occurred while processing your query. Please try again or rephrase your question in English, Hindi, or Kannada.",
+    "citations_count": 0,
+    "confidence": "low",
+    "sufficient": false,
+    "elapsed_sec": 0.0,
+    "status": "FAIL",
+    "issues": [
+      "Missing preserved terms in answer: ['Section 3(p)', 'Patents Act', 'traditional knowledge']"
+    ]
+  }
+}

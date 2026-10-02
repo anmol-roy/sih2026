@@ -133,7 +133,8 @@ class JurisdictionRetriever:
         self._emb   = embeddings
         self._top_k = top_k
 
-        self._qdrant = QdrantClient(path=QDRANT_PATH)
+        from qdrant_singleton import get_qdrant_client
+        self._qdrant = get_qdrant_client()
         existing = {c.name for c in self._qdrant.get_collections().collections}
 
         if COLLECTION_NAME in existing:

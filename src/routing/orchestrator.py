@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 from typing import Optional
 
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -75,10 +75,13 @@ def _build_citations(chunks: list[LegalChunk]) -> list[dict]:
     seen: set[str] = set()
     out = []
     for chunk in chunks:
-        if chunk.chunk_id in seen:
-            continue
-        seen.add(chunk.chunk_id)
         c = chunk.citation()
+        # Create a composite key for deduplication: document + section + subsection
+        # This prevents showing the same legal provision multiple times even if from different chunks
+        dedup_key = f"{c['document']}|{c.get('section', '')}|{c.get('subsection', '')}"
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
         out.append({
             "document"    : c["document"],
             "chapter"     : c.get("chapter")    or None,
@@ -95,7 +98,7 @@ def _build_citations(chunks: list[LegalChunk]) -> list[dict]:
 
 
 def _generate_answer(
-    llm: ChatGroq,
+    llm: ChatGoogleGenerativeAI,
     query: str,
     chunks: list[LegalChunk],
     domain_prompt: str,
@@ -108,10 +111,12 @@ def _generate_answer(
     if jurisdiction_note:
         sys_prompt = jurisdiction_note + "\n\n" + sys_prompt
     user_msg = f"Documents:\n\n{context}\n\n---\n\nQuestion: {query}\n\nAnswer:"
-    return llm.invoke([
+    from utils.llm_utils import extract_llm_text
+    res = llm.invoke([
         {"role": "system", "content": sys_prompt},
         {"role": "user",   "content": user_msg},
-    ]).content.strip()
+    ])
+    return extract_llm_text(res)
 
 
 _COMPARISON_SYSTEM = """\
@@ -141,7 +146,7 @@ class QueryOrchestrator:
     def __init__(
         self,
         embeddings: HuggingFaceEmbeddings,
-        llm: ChatGroq,
+        llm: ChatGoogleGenerativeAI,
     ):
         self._llm          = llm
         self._ip_router    = IPRouter(llm=llm)
@@ -327,10 +332,12 @@ class QueryOrchestrator:
             f"Write the comparison summary:"
         )
         try:
-            return self._llm.invoke([
+            from utils.llm_utils import extract_llm_text
+            res = self._llm.invoke([
                 {"role": "system", "content": _COMPARISON_SYSTEM},
                 {"role": "user",   "content": user_msg},
-            ]).content.strip()
+            ])
+            return extract_llm_text(res)
         except Exception:
             return "Comparison could not be generated."
 

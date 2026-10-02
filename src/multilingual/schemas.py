@@ -20,6 +20,7 @@ class Language(str, Enum):
     ENGLISH  = "en"
     HINDI    = "hi"
     KANNADA  = "kn"
+    UNKNOWN  = "unknown"
     # Extension points — add Tamil, Telugu, Marathi, etc. later
     # TAMIL    = "ta"
     # TELUGU   = "te"
@@ -31,6 +32,7 @@ LANGUAGE_NAMES: dict[Language, str] = {
     Language.ENGLISH : "English",
     Language.HINDI   : "Hindi",
     Language.KANNADA : "Kannada",
+    Language.UNKNOWN : "Unknown",
 }
 
 # langdetect codes → Language enum
@@ -40,11 +42,36 @@ LANGDETECT_MAP: dict[str, Language] = {
     "kn": Language.KANNADA,
 }
 
+# Devanagari Unicode range for script-based detection
+DEVANAGARI_RANGE = (0x0900, 0x097F)
+KANNADA_RANGE    = (0x0C80, 0x0CFF)
+
 # Keyword patterns that indicate each language (for short-query fallback)
+# Hindi: Devanagari + Romanized Hindi (Hinglish) common words
 LANGUAGE_KEYWORDS: dict[Language, list[str]] = {
-    Language.HINDI   : ["क्या", "है", "में", "से", "का", "की", "के", "पर", "यह", "कैसे",
-                        "धारा", "पेटेंट", "अधिनियम", "ज्ञान"],
-    Language.KANNADA : ["ಏನು", "ಹೇಳು", "ಕಾಯ್ದೆ", "ಸೆಕ್ಷನ್", "ಪೇಟೆಂಟ್", "ಮಾಹಿತಿ", "ಇದು"],
+    Language.HINDI   : [
+        # Devanagari keywords
+        "क्या", "है", "में", "से", "का", "की", "के", "पर", "यह", "कैसे",
+        "धारा", "पेटेंट", "अधिनियम", "ज्ञान", "नहीं", "कर", "सकता",
+        "सकती", "सकते", "मुझे", "तुम", "वह", "हम", "आप", "कौन",
+        "कब", "कहाँ", "क्यूं", "और", "या", "लेकिन", "अगर", "तो",
+        "भारत", "दवा", "आयुर्वेदिक", "फॉर्मूलेशन", "नीम", "हल्दी",
+        # Romanized Hindi / Hinglish keywords (lowercase)
+        "kya", "hai", "mein", "se", "ka", "ki", "ke", "par", "yeh", "kaise",
+        "dhara", "patent", "adhiniyam", "gyan", "nahi", "kar", "sakta",
+        "sakti", "sakte", "mujhe", "tum", "vah", "hum", "aap", "kaun",
+        "kab", "kahan", "kyun", "aur", "ya", "lekin", "agar", "to",
+        "bharat", "dawa", "ayurvedic", "formulation", "neem", "haldi",
+        "hain", "hoon", "ho", "karna", "karne", "karte", "karta", "karti",
+        "apna", "apni", "apne", "mera", "meri", "mere", "tera", "teri",
+    ],
+    Language.KANNADA : [
+        # Kannada keywords
+        "ಏನು", "ಹೇಳು", "ಕಾಯ್ದೆ", "ಸೆಕ್ಷನ್", "ಪೇಟೆಂಟ್", "ಮಾಹಿತಿ", "ಇದು",
+        "ನನ್ನ", "ಮತ್ತು", "ಅರಿಶಿನ", "ಬೇವು", "ಭಾರತ", "ಆಯುರ್ವೇದಿಕ್",
+        "ಫಾರ್ಮುಲೇಶನ್", "ಪಡೆಯಬಹುದೇ", "ಕೊಡುತ್ತದೆ", "ಎಂದರೆ", "ಹೇಗೆ",
+        "ಯಾವುದೇ", "ಇಲ್ಲ", "ಹೌದು", "ನೀವು", "ನಾವು", "ಅವರು",
+    ],
 }
 
 

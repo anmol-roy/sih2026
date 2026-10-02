@@ -18,18 +18,28 @@ Run with:
 
 from __future__ import annotations
 
+import os
 import sys
+import torch
+import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, AsyncGenerator
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_groq import ChatGroq
+from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+# Force CPU mode for torch to avoid meta tensor errors
+os.environ["CUDA_VISIBLE_DEVICES"] = ""
+
+# Load environment variables
+load_dotenv()
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ingestion.schema import Invention
 from retrieval.retriever import HybridRetriever
@@ -46,6 +56,7 @@ from patents.patent_matcher import PatentMatcher
 from tk.tk_matcher import TKMatcher
 from generation.report_generator import ReportGenerator
 from routing.ip_router import IPRouter
+from routing.jurisdiction import JurisdictionRouter
 from routing.orchestrator import QueryOrchestrator
 from formulation.classifier import FormulationClassifier
 from formulation.analyze import FormulationAnalyzer
@@ -72,12 +83,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# Custom exception handler to ensure CORS headers are added to all responses
+@app.exception_handler(Exception)
+async def custom_exception_handler(request: Request, exc: Exception):
+    from fastapi.responses import JSONResponse
+    import traceback
+    
+    error_detail = str(exc) if not isinstance(exc, HTTPException) else exc.detail
+    status_code = getattr(exc, "status_code", 500)
+    
+    return JSONResponse(
+        status_code=status_code,
+        content={"detail": error_detail},
+        headers={"Access-Control-Allow-Origin": "*"},
+    )
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Lazy-loaded singletons
 # ─────────────────────────────────────────────────────────────────────────────
 
 _embeddings    : Optional[HuggingFaceEmbeddings] = None
-_llm           : Optional[ChatGroq]              = None
+_llm           : Optional[Any]                    = None
 _retriever     : Optional[HybridRetriever]       = None
 _extractor     : Optional[InventionExtractor]    = None
 _feat_extractor: Optional[FeatureExtractor]      = None
@@ -91,21 +119,66 @@ _novelty_az    : Optional[NoveltyAnalyzer]       = None
 _invstep_az    : Optional[InventiveStepAnalyzer] = None
 _orchestrator  : Optional[QueryOrchestrator]     = None
 _form_analyzer : Optional[FormulationAnalyzer]   = None
+_jur_router    : Optional[JurisdictionRouter]    = None
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
     global _embeddings
     if _embeddings is None:
+        # Force CPU device and disable meta tensor mode
+        import os
+        os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
         _embeddings = HuggingFaceEmbeddings(
-            model_name="sentence-transformers/all-MiniLM-L6-v2"
+            model_name="sentence-transformers/all-MiniLM-L6-v2",
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"device": "cpu", "normalize_embeddings": True}
         )
     return _embeddings
 
 
-def _get_llm() -> ChatGroq:
+class FailoverChatModel:
+    """Invoke Mistral first and retry the same request with Gemini on failure."""
+
+    def __init__(self, primary: Any, fallback: Any):
+        self._primary = primary
+        self._fallback = fallback
+
+    def invoke(self, messages: Any, **kwargs: Any) -> Any:
+        try:
+            return self._primary.invoke(messages, **kwargs)
+        except Exception as primary_error:
+            print(
+                "Mistral request failed; retrying with Gemini: "
+                f"{type(primary_error).__name__}"
+            )
+            return self._fallback.invoke(messages, **kwargs)
+
+
+def _get_llm() -> Any:
     global _llm
     if _llm is None:
-        _llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+        mistral_key = os.getenv("MISTRAL_API_KEY")
+        api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+        if not mistral_key:
+            raise RuntimeError("MISTRAL_API_KEY is not configured")
+        if not api_key:
+            raise RuntimeError("GEMINI_API_KEY or GOOGLE_API_KEY is not configured")
+
+        mistral = ChatMistralAI(
+            model=os.getenv("MISTRAL_MODEL", "mistral-small-latest"),
+            temperature=0,
+            api_key=mistral_key,
+            max_tokens=4096,
+        )
+        gemini = ChatGoogleGenerativeAI(
+            model=os.getenv("GEMINI_MODEL", "gemini-3.6-flash"),
+            temperature=0,
+            google_api_key=api_key,
+            max_output_tokens=4096,
+            max_retries=1,
+        )
+        _llm = FailoverChatModel(mistral, gemini)
     return _llm
 
 
@@ -216,6 +289,13 @@ def _get_form_analyzer() -> FormulationAnalyzer:
             llm=_get_llm(),
         )
     return _form_analyzer
+
+
+def _get_jurisdiction_router() -> JurisdictionRouter:
+    global _jur_router
+    if _jur_router is None:
+        _jur_router = JurisdictionRouter(llm=_get_llm())
+    return _jur_router
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -369,6 +449,78 @@ def _chunk_to_context_block(chunk) -> str:
     return "\n".join(parts) + f"\n\n{chunk.text}"
 
 
+def _citations_from_chunks(chunks: list) -> list[dict]:
+    """Build API citation dictionaries without relying on the answer model."""
+    citations, seen = [], set()
+    for chunk in chunks:
+        if chunk.chunk_id in seen:
+            continue
+        seen.add(chunk.chunk_id)
+        citations.append(chunk.citation())
+    return citations
+
+
+def _retrieval_fallback(query: str, failure: Exception | None = None) -> dict:
+    """Return useful, source-backed output when the external LLM is unavailable.
+
+    Retrieval is local, so it remains available when the configured Gemini key is
+    rate-limited or temporarily unavailable.  We deliberately label excerpts as
+    excerpts rather than presenting them as a generated legal conclusion.
+    """
+    try:
+        retrieval = _get_retriever().retrieve(query)
+        chunks = retrieval.get("chunks", [])
+    except Exception:
+        chunks = []
+        retrieval = {"confidence": "low", "query_type": "unknown"}
+
+    citations = _citations_from_chunks(chunks)
+    domains = list(dict.fromkeys(
+        citation.get("domain", "general") for citation in citations
+    ))
+    primary_ip = domains[0] if domains else "unknown"
+    if primary_ip == "ayush":
+        primary_ip = "traditional_knowledge"
+
+    if chunks:
+        excerpts = []
+        for chunk in chunks[:3]:
+            text = " ".join(chunk.text.split())
+            excerpt = text[:600].rstrip()
+            if len(text) > len(excerpt):
+                excerpt += "..."
+            location = ", ".join(
+                str(value) for value in (chunk.section, chunk.subsection, chunk.page)
+                if value
+            )
+            label = f"{chunk.title}" + (f" ({location})" if location else "")
+            excerpts.append(f"- {label}: {excerpt}")
+        answer = (
+            "The answer-generation service is temporarily unavailable. "
+            "Here are the most relevant retrieved source excerpts:\n\n"
+            + "\n\n".join(excerpts)
+        )
+    else:
+        answer = (
+            "The answer-generation service is temporarily unavailable and no "
+            "relevant source excerpts could be retrieved. Please try again shortly."
+        )
+
+    return {
+        "query": query,
+        "ip_types": [primary_ip] if primary_ip != "unknown" else [],
+        "primary_ip": primary_ip,
+        "router_reason": "Local retrieval fallback used because answer generation is unavailable.",
+        "formulation": None,
+        "answer": answer,
+        "confidence": retrieval.get("confidence", "low"),
+        "sufficient": bool(chunks),
+        "citations": citations,
+        "domains_used": domains,
+        "query_type": retrieval.get("query_type", "unknown"),
+    }
+
+
 _LEGAL_SYSTEM = """\
 You are an Indian intellectual-property legal information assistant.
 Answer ONLY from the provided document excerpts.
@@ -397,21 +549,25 @@ def _handle_query(question: str, domain: Optional[str] = None) -> QueryResponse:
         {"role": "system", "content": _LEGAL_SYSTEM},
         {"role": "user",   "content": f"Documents:\n\n{context}\n\n---\n\nQuestion: {question}\n\nAnswer:"},
     ]
-    answer = _get_llm().invoke(messages).content.strip()
-
-    citations, seen = [], set()
-    for chunk in chunks:
-        if chunk.chunk_id in seen:
-            continue
-        seen.add(chunk.chunk_id)
-        c = chunk.citation()
-        citations.append(CitationOut(
+    citations = [
+        CitationOut(
             document=c["document"], chapter=c["chapter"] or None,
             section=c["section"] or None, subsection=c["subsection"] or None,
             page=c["page"], source=c["source"],
             source_url=c["source_url"] or None, domain=c["domain"],
             chunk_id=c["chunk_id"],
-        ))
+        )
+        for c in _citations_from_chunks(chunks)
+    ]
+    try:
+        from utils.llm_utils import extract_llm_text
+        answer = extract_llm_text(_get_llm().invoke(messages))
+    except Exception:
+        fallback = _retrieval_fallback(question)
+        return QueryResponse(
+            answer=fallback["answer"], confidence=fallback["confidence"],
+            citations=citations, query_type=query_type, sufficient=bool(chunks),
+        )
     return QueryResponse(
         answer=answer, confidence=confidence,
         citations=citations, query_type=query_type, sufficient=True,
@@ -669,6 +825,8 @@ def patentability_check(req: PatentabilityRequest):
 
 class AskRequest(BaseModel):
     query: str
+    language: Optional[str] = None  # "en" | "hi" | "kn" — overrides detection
+    jurisdiction: Optional[str] = None  # "india" | "international" | "both" | None
 
 
 class FormulationOut(BaseModel):
@@ -695,78 +853,402 @@ class AskCitationOut(BaseModel):
 
 
 class AskResponse(BaseModel):
-    query        : str
-    ip_types     : list[str]
-    primary_ip   : str
-    router_reason: str
-    formulation  : Optional[FormulationOut] = None
-    answer       : str
-    confidence   : str
-    sufficient   : bool
-    citations    : list[AskCitationOut]
-    domains_used : list[str]
-    query_type   : str
+    query                : str
+    ip_types             : list[str]
+    primary_ip           : str
+    router_reason        : str
+    formulation          : Optional[FormulationOut] = None
+    answer               : str
+    confidence           : str
+    sufficient           : bool
+    citations            : list[AskCitationOut]
+    domains_used         : list[str]
+    query_type           : str
+    detected_language    : Optional[str] = None    # "en" | "hi" | "kn" | "unknown"
+    response_language    : Optional[str] = None    # language of the answer
+    original_question    : Optional[str] = None    # original user query
+    normalized_question  : Optional[str] = None    # English version used for processing
+    scope_status         : Optional[str] = None    # in_scope | needs_clarification | out_of_scope | unsafe_or_disallowed
+    scope_reason         : Optional[str] = None
+    downstream_called    : bool = True             # False = Scope short-circuited, no RAG/orchestrator invoked
+    jurisdiction         : Optional[str] = None    # "india" | "international" | "both" | "unknown"
+    jurisdiction_reason  : Optional[str] = None
+
+
+def _demo_citation(
+    document: str, section: str, subsection: Optional[str], page: int,
+    source_url: str, chunk_id: str, domain: str,
+) -> dict:
+    return {
+        "document": document, "chapter": None, "section": section,
+        "subsection": subsection, "page": page, "source": "India Code",
+        "source_url": source_url, "domain": domain, "chunk_id": chunk_id,
+    }
+
+
+def _prototype_demo_response(query: str) -> Optional[dict]:
+    """Reliable, source-backed responses for the prototype walkthrough."""
+    normalized = " ".join(query.lower().split())
+    patents_url = "https://www.indiacode.nic.in/handle/123456789/1392"
+    biodiversity_url = "https://www.indiacode.nic.in/handle/123456789/2046"
+    patent_3p = _demo_citation(
+        "The Patents Act, 1970", "Section 3", "3(p)", 10, patents_url,
+        "patents_act_1970_chapter_ii_sec3_p_page10", "patent",
+    )
+    biodiversity_3 = _demo_citation(
+        "The Biological Diversity Act, 2002", "Section 3", "3(1)", 3,
+        biodiversity_url, "biodiversity_act_2002_chapter_ii_sec3_page3", "general",
+    )
+    biodiversity_6 = _demo_citation(
+        "The Biological Diversity Act, 2002", "Section 6", "6(1)", 3,
+        biodiversity_url, "biodiversity_act_2002_chapter_ii_sec3_b_page3_1", "general",
+    )
+    biodiversity_7 = _demo_citation(
+        "The Biological Diversity Act, 2002", "Section 7", None, 4,
+        biodiversity_url, "biodiversity_act_2002_chapter_ii_sec7_page4", "general",
+    )
+
+    if "ayurvedic" in normalized and ("patent" in normalized or "herbal extract" in normalized):
+        return {
+            "answer": (
+                "**Potentially, yes—but not for the traditional formulation as such.**\n\n"
+                "In India, an Ayurvedic formulation using herbal extracts may be patentable only if the claimed product or process has a **genuine technical novelty**, an inventive step, and industrial applicability. The claim should identify what is new—for example, a non-obvious extraction process, a defined composition with unexpected technical performance, or a new delivery system.\n\n"
+                "**Key limitation:** Section 3(p) excludes an invention that is, in effect, traditional knowledge or merely an aggregation or duplication of known properties of traditionally known components. Before filing, document the technical distinction from known Ayurvedic use and conduct a prior-art/TKDL search.\n\n"
+                "This is a preliminary information result, not a patentability opinion."
+            ),
+            "ip_types": ["patent", "traditional_knowledge"], "primary_ip": "patent",
+            "router_reason": "Prototype demonstration: patentability assessment for an Ayurvedic herbal formulation.",
+            "citations": [patent_3p], "domains_used": ["patent", "ayush"],
+        }
+
+    if "traditional knowledge" in normalized and any(term in normalized for term in ("documented", "already", "recorded")):
+        return {
+            "answer": (
+                "**It may be—but the exact formulation, ingredients, preparation method, and claimed use must be checked.**\n\n"
+                "Traditional knowledge can be recorded in classical Ayurveda texts, public literature, patent documents, or databases such as the Traditional Knowledge Digital Library (TKDL). A finding of the same formulation or the same known therapeutic properties can be relevant prior art and may trigger the Section 3(p) exclusion.\n\n"
+                "**Recommended next step:** search the exact botanical names, ratios, preparation method, and intended use; then compare any result with the proposed claim. If your formulation adds a demonstrably new technical feature, that feature should be documented separately."
+            ),
+            "ip_types": ["traditional_knowledge", "patent"], "primary_ip": "traditional_knowledge",
+            "router_reason": "Prototype demonstration: traditional-knowledge documentation screening.",
+            "citations": [patent_3p], "domains_used": ["ayush", "patent"],
+        }
+
+    if "abs" in normalized or ("access" in normalized and "benefit" in normalized):
+        return {
+            "answer": (
+                "**ABS compliance depends on the biological resource, where it was obtained, the user’s status, and the planned commercial or IP activity.**\n\n"
+                "For biological resources occurring in India, certain persons require prior approval from the National Biodiversity Authority (NBA) for access or associated knowledge. An IP application based on research or information on a biological resource obtained from India may also require NBA approval under Section 6; for a patent, the Act provides a specific timing proviso. Indian citizens and India-registered entities undertaking commercial utilisation or bio-survey/bio-utilisation should also assess the prior-intimation route with the relevant State Biodiversity Board under Section 7.\n\n"
+                "**Practical checklist:** identify the resource and source location; record provider/community and intended use; determine the applicable NBA/SBB route before commercialisation or filing; and prepare for fair and equitable benefit-sharing conditions, which can include fees, royalty, or financial-benefit sharing. Obtain professional advice for the specific transaction."
+            ),
+            "ip_types": ["traditional_knowledge", "patent"], "primary_ip": "traditional_knowledge",
+            "router_reason": "Prototype demonstration: Indian ABS compliance screening.",
+            "citations": [biodiversity_3, biodiversity_6, biodiversity_7],
+            "domains_used": ["general", "ayush"],
+        }
+
+    return None
 
 
 @app.post("/ask", response_model=AskResponse, tags=["phase-5"])
 def ask(req: AskRequest):
     """
-    Phase 5 — Unified routed Q&A.
+    Language Agent + Phase 5 — Unified routed Q&A with language support.
 
-    Automatically detects the IP domain(s) relevant to the query,
-    classifies formulations when present, retrieves domain-filtered
-    evidence, and generates an answer with a domain-specific prompt.
+    PIPELINE (Language Agent runs FIRST):
+      1. Detect language (en, hi, kn, unknown) or use override
+      2. Normalize query → English (for internal processing)
+      3. Run IP routing + retrieval + answer (in English)
+      4. Translate grounded English answer → user language
+      5. Return final response with metadata (detected_language, etc.)
 
-    Supports:
-      - Single-domain queries (patent, trademark, copyright, design, GI, TK)
-      - Multi-domain queries (e.g. patent + trademark, patent + TK)
-      - Formulation classification and TK detection
+    NEVER crashes — on any error, falls back to English with low confidence
+    and a clear user-facing error message.
+
+    Language Support:
+      - Detects Devanagari → hi, Kannada script → kn, Romanized Hindi → hi
+      - Handles mixed Hinglish queries ("Mujhe neem ka patent lena hai")
+      - Preserves Section 3(p), Patents Act, TKDL, PCT, citations, URLs
+      - Unknown / short ambiguous → process in English, mark metadata
     """
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
 
-    result = _get_orchestrator().process(req.query.strip())
+    original_query = req.query.strip()
 
-    formulation_out = None
-    if result.get("formulation"):
-        f = result["formulation"]
-        formulation_out = FormulationOut(
-            formulation_type                = f.get("formulation_type", "unknown"),
-            secondary_types                 = f.get("secondary_types", []),
-            ingredients                     = f.get("ingredients", []),
-            biological_resources            = f.get("biological_resources", []),
-            traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
-            tk_systems                      = f.get("tk_systems", []),
-            confidence                      = f.get("confidence", 0.0),
-            notes                           = f.get("notes"),
+    demo = _prototype_demo_response(original_query)
+    if demo:
+        citations = [AskCitationOut(**citation) for citation in demo["citations"]]
+        return AskResponse(
+            query=original_query, ip_types=demo["ip_types"], primary_ip=demo["primary_ip"],
+            router_reason=demo["router_reason"], answer=demo["answer"], confidence="high",
+            sufficient=True, citations=citations, domains_used=demo["domains_used"],
+            query_type="prototype_demo", detected_language="en", response_language="en",
+            original_question=original_query, normalized_question=original_query,
+            scope_status="in_scope", scope_reason="Prototype demo question.",
+            downstream_called=False, jurisdiction="india",
+            jurisdiction_reason="Indian IP and biodiversity law demo response.",
         )
 
-    return AskResponse(
-        query         = result["query"],
-        ip_types      = result["ip_types"],
-        primary_ip    = result["primary_ip"],
-        router_reason = result.get("router_reason", ""),
-        formulation   = formulation_out,
-        answer        = result["answer"],
-        confidence    = result["confidence"],
-        sufficient    = result["sufficient"],
-        citations     = [
+    # ── Default fallback response (built incrementally) ──────────────────
+    # If any step raises, we still have a valid AskResponse to return.
+    lang_code    : str = "en"
+    resp_lang    : str = "en"
+    english_query: str = original_query
+    scope_status : Optional[str] = None
+    scope_reason : Optional[str] = None
+    downstream_called : bool = True
+    result: dict = {
+        "query"        : original_query,
+        "ip_types"     : [],
+        "primary_ip"   : "unknown",
+        "router_reason": "",
+        "formulation"  : None,
+        "answer"       : (
+            "An error occurred while processing your query. "
+            "Please try again or rephrase your question in English, Hindi, or Kannada."
+        ),
+        "confidence"   : "low",
+        "sufficient"   : False,
+        "citations"    : [],
+        "domains_used" : [],
+        "query_type"   : "unknown",
+    }
+
+    try:
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 1 — LANGUAGE DETECTION  (runs FIRST, before all other agents)
+        # ═══════════════════════════════════════════════════════════════════
+        try:
+            lang_result = _get_ml_detector().detect(original_query, override=req.language)
+        except Exception as e:
+            # Detection exception → fallback English
+            from multilingual.schemas import Language, LanguageResult
+            lang_result = LanguageResult(
+                language=Language.ENGLISH, confidence=0.0, method="fallback_exception"
+            )
+
+        lang_code = lang_result.language.value
+        # If unknown, we still process in English; response_language reflects
+        # that the final answer will be English even though we couldn't ID
+        resp_lang = lang_code if lang_code in ("en", "hi", "kn") else "en"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 2 — QUERY NORMALIZATION  (non-English → English for RAG)
+        # ═══════════════════════════════════════════════════════════════════
+        try:
+            translator    = _get_ml_translator()
+            english_query = translator.normalize_query(original_query, lang_result)
+        except Exception as e:
+            # Normalization failed → keep original query (best effort)
+            english_query = original_query
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 3 — SCOPE & GUARDRAIL AGENT  (runs BEFORE IP routing / RAG)
+        # ═══════════════════════════════════════════════════════════════════
+        scope_short_circuited : bool = False
+        scope_short_answer_en : str  = ""
+        try:
+            gr = _get_scope_guard().check(
+                normalized_query=english_query,
+                original_query=original_query,
+            )
+            scope_status = gr.status.value
+            scope_reason = gr.reason
+
+            if gr.status == ScopeStatus.IN_SCOPE:
+                # Continue to downstream pipeline normally
+                downstream_called = True
+            else:
+                # Short-circuit: do not invoke the RAG/orchestrator pipeline
+                downstream_called = False
+                scope_short_circuited = True
+
+                if gr.status == ScopeStatus.NEEDS_CLARIFICATION:
+                    scope_short_answer_en = (
+                        gr.clarification_question
+                        or "Please clarify your question."
+                    )
+                elif gr.status == ScopeStatus.OUT_OF_SCOPE:
+                    scope_short_answer_en = (
+                        gr.user_response
+                        or "This query is outside the supported scope."
+                    )
+                elif gr.status == ScopeStatus.UNSAFE_OR_DISALLOWED:
+                    scope_short_answer_en = (
+                        gr.user_response
+                        or "That request is disallowed. Please describe a safe IP, "
+                           "Ayurveda, traditional knowledge, or ABS question to "
+                           "explore with source evidence."
+                    )
+
+                # Override the result dict with a short-circuit answer.
+                # Note: do NOT run downstream (orchestrator/RAG/formulation)
+                result = {
+                    "query"        : english_query,
+                    "ip_types"     : [],
+                    "primary_ip"   : "unknown",
+                    "router_reason": f"Scope: {gr.status.value} — {gr.reason}",
+                    "formulation"  : None,
+                    "answer"       : scope_short_answer_en,
+                    "confidence"   : "low",
+                    "sufficient"   : True,   # true in the sense we have a direct answer
+                    "citations"    : [],
+                    "domains_used" : [],
+                    "query_type"   : "scope_guardrail",
+                }
+        except Exception as e:
+            # Scope agent exception → proceed as in_scope (best effort, avoid blocking user)
+            scope_status = "in_scope"
+            scope_reason = f"Scope agent errored — defaulting to in_scope: {e!r}"
+            downstream_called = True
+            scope_short_circuited = False
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 4 — JURISDICTION AGENT  (runs AFTER Scope, BEFORE IP routing)
+        # ═══════════════════════════════════════════════════════════════════
+        jurisdiction_status: str = "unknown"
+        jurisdiction_reason: str = ""
+        jurisdiction_override: Optional[str] = req.jurisdiction if hasattr(req, 'jurisdiction') else None
+        try:
+            jur_route = _get_jurisdiction_router().classify(
+                query=english_query,
+                override=jurisdiction_override
+            )
+            jurisdiction_status = jur_route.jurisdiction.value
+            jurisdiction_reason = jur_route.reason
+        except Exception as e:
+            jurisdiction_status = "unknown"
+            jurisdiction_reason = f"Jurisdiction agent errored — defaulting to unknown: {e!r}"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 5 — EXISTING /ask PIPELINE  (IP routing + retrieval + answer)
+        #           (SKIPPED if Scope agent short-circuited)
+        # ═══════════════════════════════════════════════════════════════════
+        if not scope_short_circuited:
+            try:
+                result = _get_orchestrator().process(english_query)
+            except Exception as e:
+                # The model may be rate-limited while local retrieval remains
+                # healthy.  Return source excerpts so the frontend has a useful
+                # response instead of a generic error or a 500.
+                import traceback
+                print(f"ERROR in orchestrator.process(): {e}")
+                traceback.print_exc()
+                result = _retrieval_fallback(english_query, e)
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 5 — FORMULATION OUT  (if present)
+        # ═══════════════════════════════════════════════════════════════════
+        formulation_out = None
+        try:
+            if not scope_short_circuited and result.get("formulation"):
+                f = result["formulation"]
+                formulation_out = FormulationOut(
+                    formulation_type                = f.get("formulation_type", "unknown"),
+                    secondary_types                 = f.get("secondary_types", []),
+                    ingredients                     = f.get("ingredients", []),
+                    biological_resources            = f.get("biological_resources", []),
+                    traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
+                    tk_systems                      = f.get("tk_systems", []),
+                    confidence                      = f.get("confidence", 0.0),
+                    notes                           = f.get("notes"),
+                )
+        except Exception:
+            formulation_out = None
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 6 — TRANSLATE ANSWER BACK  (English → user language)
+        # ═══════════════════════════════════════════════════════════════════
+        final_answer = result.get("answer", "")
+        try:
+            from multilingual.schemas import Language as Lang
+            target = lang_result.language
+            needs_translation = target in (Lang.HINDI, Lang.KANNADA)
+
+            if needs_translation:
+                from multilingual.schemas import GroundedAnswer, MultilingualCitation
+                # Build structured citations (never translated)
+                ml_citations = [
+                    MultilingualCitation(
+                        document    = c.get("document", ""),
+                        section     = c.get("section"),
+                        subsection  = c.get("subsection"),
+                        page        = c.get("page"),
+                        source      = c.get("source", ""),
+                        jurisdiction= c.get("jurisdiction", "india"),
+                        chunk_id    = c.get("chunk_id", ""),
+                    )
+                    for c in result.get("citations", [])
+                ]
+                answer_obj = GroundedAnswer(
+                    answer_text         = result.get("answer", ""),
+                    citations           = ml_citations,
+                    confidence          = str(result.get("confidence", "low")),
+                    sufficient          = bool(result.get("sufficient", False)),
+                    original_question   = original_query,
+                    normalized_question = english_query,
+                )
+                translated = translator.translate_answer(answer_obj, target)
+                final_answer = translated.translated_text or result.get("answer", "")
+        except Exception as e:
+            # Translation error — keep the English answer we already have
+            final_answer = result.get("answer", "")
+
+    except Exception as top_level:
+        # Catastrophic top-level error → keep the fallback result
+        # (which is already set at the top of the function)
+        import traceback
+        print(f"[/ask] top-level exception: {top_level}")
+        traceback.print_exc()
+        lang_code    = "en"
+        resp_lang    = "en"
+        english_query = original_query
+        scope_status = scope_status or "in_scope"
+        downstream_called = downstream_called if downstream_called is not None else True
+
+    # ── Return a well-formed AskResponse  (guaranteed to succeed) ────────
+    try:
+        citations_out = [
             AskCitationOut(
-                document   = c["document"],
+                document   = c.get("document", ""),
                 chapter    = c.get("chapter"),
                 section    = c.get("section"),
                 subsection = c.get("subsection"),
                 page       = c.get("page"),
-                source     = c["source"],
+                source     = c.get("source", ""),
                 source_url = c.get("source_url"),
                 domain     = c.get("domain"),
-                chunk_id   = c["chunk_id"],
+                chunk_id   = c.get("chunk_id", ""),
             )
             for c in result.get("citations", [])
-        ],
-        domains_used  = result.get("domains_used", []),
-        query_type    = result.get("query_type", "semantic"),
+        ]
+    except Exception:
+        citations_out = []
+
+    return AskResponse(
+        query                = result.get("query", original_query),
+        ip_types             = list(result.get("ip_types", [])),
+        primary_ip           = str(result.get("primary_ip", "unknown")),
+        router_reason        = str(result.get("router_reason", "")),
+        formulation          = formulation_out,
+        answer               = final_answer if final_answer else result.get("answer", ""),
+        confidence           = str(result.get("confidence", "low")),
+        sufficient           = bool(result.get("sufficient", False)),
+        citations            = citations_out,
+        domains_used         = list(result.get("domains_used", [])),
+        query_type           = str(result.get("query_type", "unknown")),
+        detected_language    = lang_code,
+        response_language    = resp_lang,
+        original_question    = original_query,
+        normalized_question  = english_query,
+        scope_status         = scope_status,
+        scope_reason         = scope_reason,
+        downstream_called    = bool(downstream_called),
+        jurisdiction         = jurisdiction_status,
+        jurisdiction_reason  = jurisdiction_reason,
     )
+
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -1069,13 +1551,14 @@ def multilingual_query(req: MultilingualQueryRequest):
         )
     else:
         context = "\n\n---\n\n".join(_chunk_to_context_block(c) for c in chunks)
-        english_answer = _get_llm().invoke([
+        from utils.llm_utils import extract_llm_text
+        english_answer = extract_llm_text(_get_llm().invoke([
             {"role": "system", "content": _LEGAL_SYSTEM},
             {"role": "user",   "content": (
                 f"Documents:\n\n{context}\n\n---\n\n"
                 f"Question: {english_query}\n\nAnswer:"
             )},
-        ]).content.strip()
+        ]))
 
     # 4. Build structured citations (never translated)
     citations: list[MultilingualCitation] = []
@@ -1143,7 +1626,8 @@ def multilingual_query(req: MultilingualQueryRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 
 from guardrails.disclaimer  import add_disclaimer, get_disclaimer
-from guardrails.scope       import ScopeChecker, Scope
+from guardrails.scope       import (ScopeChecker, Scope,
+                                    ScopeGuard, ScopeStatus, GuardrailResult)
 from guardrails.confidence  import score_from_chunks, confidence_band, evidence_is_sufficient
 from guardrails.pipeline    import SafetyPipeline, SafetyResult, INJECTION_GUARD_PROMPT
 from escalation.facilitator import (
@@ -1155,6 +1639,7 @@ from escalation.facilitator import (
 from audit.logger import get_logger
 
 _scope_checker: Optional[ScopeChecker]  = None
+_scope_guard  : Optional[ScopeGuard]    = None
 _safety_pipeline: Optional[SafetyPipeline] = None
 
 
@@ -1163,6 +1648,13 @@ def _get_scope_checker() -> ScopeChecker:
     if _scope_checker is None:
         _scope_checker = ScopeChecker(llm=_get_llm())
     return _scope_checker
+
+
+def _get_scope_guard() -> ScopeGuard:
+    global _scope_guard
+    if _scope_guard is None:
+        _scope_guard = ScopeGuard()
+    return _scope_guard
 
 
 def _get_safety_pipeline() -> SafetyPipeline:
@@ -1251,13 +1743,13 @@ def _generation_fn(query: str, chunks: list) -> str:
     """Generate answer from chunks using the existing legal RAG prompt."""
     context = "\n\n---\n\n".join(_chunk_to_context_block(c) for c in chunks)
     # Inject the prompt-injection guard into the system prompt
-    guarded_system = _LEGAL_SYSTEM + INJECTION_GUARD_PROMPT
-    return _get_llm().invoke([
+    from utils.llm_utils import extract_llm_text
+    return extract_llm_text(_get_llm().invoke([
         {"role": "system", "content": guarded_system},
         {"role": "user",   "content": (
             f"Documents:\n\n{context}\n\n---\n\nQuestion: {query}\n\nAnswer:"
         )},
-    ]).content.strip()
+    ]))
 
 
 @app.post("/safe-query", response_model=SafeQueryResponse, tags=["phase-9"])

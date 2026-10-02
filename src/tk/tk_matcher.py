@@ -108,7 +108,8 @@ class TKMatcher:
     ):
         self._emb    = embeddings
         self._top_k  = top_k
-        self._qdrant = QdrantClient(path=QDRANT_PATH)
+        from qdrant_singleton import get_qdrant_client
+        self._qdrant = get_qdrant_client()
 
         self._ayush_filter = Filter(
             must=[FieldCondition(key="domain", match=MatchValue(value="ayush"))]
