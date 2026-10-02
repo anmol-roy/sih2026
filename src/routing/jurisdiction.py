@@ -52,44 +52,14 @@ class JurisdictionRoute(BaseModel):
 
 # Strong India indicators
 _INDIA_RE = re.compile(
-    r"""
-    \bIndia(?:n)?\b              |  # Indian / India
-    \bIP\s*India\b               |  # IP India
-    India\s*Code                 |  # India Code
-    Patents?\s*Act\s*1970        |  # Patents Act 1970
-    Trade\s*Marks?\s*Act\s*1999  |  # Trade Marks Act
-    Copyright\s*Act\s*1957       |  # Copyright Act 1957
-    Designs?\s*Act\s*2000        |  # Designs Act 2000
-    Section\s*\d+                |  # Section X (any section = Indian law context)
-    \bAYUSH\b                    |  # AYUSH
-    \bTKDL\b                     |  # TKDL
-    \bIPO\b                      |  # Indian Patent Office
-    India\s*Code                 |  # India Code
-    \bDGFT\b                     |  # DGFT
-    Geographical\s*Indication.*India
-    """,
-    re.VERBOSE | re.IGNORECASE,
+    r"India|Indian|IP\s*India|India\s*Code|Patents?\s*Act\s*1970|Trade\s*Marks?\s*Act\s*1999|Copyright\s*Act\s*1957|Designs?\s*Act\s*2000|TKDL|IPO|DGFT|Geographical\s*Indication.*India|भारत|भारतीय",
+    re.IGNORECASE,
 )
 
 # Strong international indicators
 _INTL_RE = re.compile(
-    r"""
-    \bWIPO\b                     |  # WIPO
-    \bPCT\b                      |  # PCT
-    \bTRIPS\b                    |  # TRIPS
-    Paris\s*Convention           |  # Paris Convention
-    Madrid\s*(?:Protocol|System) |  # Madrid System
-    Berne\s*Convention           |  # Berne Convention
-    Hague\s*(?:Agreement|System) |  # Hague System
-    international\s*(?:patent|trademark|copyright|treaty|agreement|IP|filing|geographical) |
-    \bUNCTAD\b                   |
-    \bEPO\b                      |  # EPO
-    \bUSPTO\b                    |  # USPTO
-    multilateral\s*treaty        |
-    \bPCT\s*application          |
-    Patent\s*Cooperation\s*Treaty
-    """,
-    re.VERBOSE | re.IGNORECASE,
+    r"WIPO|PCT|TRIPS|Paris\s*Convention|Madrid\s*(?:Protocol|System)|Berne\s*Convention|Hague\s*(?:Agreement|System)|international(?:ly)?|UNCTAD|EPO|USPTO|multilateral\s*treaty|PCT\s*application|Patent\s*Cooperation\s*Treaty|Europe|European|US|USA|United\s*States|ಅಂತಾರಾಷ್ಟ್ರೀಯ",
+    re.IGNORECASE,
 )
 
 # Explicit comparison / "both" indicators
@@ -142,11 +112,11 @@ def _keyword_classify(query: str) -> JurisdictionRoute:
             reason="Query contains WIPO / PCT / TRIPS / Paris Convention keywords.",
         )
 
-    # No strong signal — default to India
+    # No strong signal — return unknown/unclear
     return JurisdictionRoute(
-        jurisdiction=Jurisdiction.INDIA,
+        jurisdiction=Jurisdiction.UNKNOWN,
         confidence=0.50,
-        reason="No strong jurisdiction signal detected; defaulting to India.",
+        reason="No strong jurisdiction signal detected; jurisdiction is unclear.",
     )
 
 
@@ -183,7 +153,8 @@ Return ONLY a JSON object with EXACTLY these keys:
 
 Rules:
 - Output ONLY valid JSON. No markdown. No explanation outside JSON.
-- When in doubt between india and unknown, prefer india.
+- When in doubt between india and unknown, prefer unknown.
+- Do NOT assume India just because the query mentions Ayurveda or traditional knowledge.
 - Use "both" ONLY when the user explicitly requests a comparison OR
   when the query cannot be answered without citing both jurisdictions.
 """

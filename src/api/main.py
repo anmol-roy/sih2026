@@ -21,12 +21,14 @@ from __future__ import annotations
 import os
 import sys
 import torch
+import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, AsyncGenerator
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from langchain_mistralai import ChatMistralAI
 from langchain_huggingface import HuggingFaceEmbeddings
 from pydantic import BaseModel
@@ -35,7 +37,7 @@ from pydantic import BaseModel
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 torch.set_default_device("cpu")
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from ingestion.schema import Invention
 from retrieval.retriever import HybridRetriever
@@ -52,6 +54,7 @@ from patents.patent_matcher import PatentMatcher
 from tk.tk_matcher import TKMatcher
 from generation.report_generator import ReportGenerator
 from routing.ip_router import IPRouter
+from routing.jurisdiction import JurisdictionRouter
 from routing.orchestrator import QueryOrchestrator
 from formulation.classifier import FormulationClassifier
 from formulation.analyze import FormulationAnalyzer
@@ -114,6 +117,7 @@ _novelty_az    : Optional[NoveltyAnalyzer]       = None
 _invstep_az    : Optional[InventiveStepAnalyzer] = None
 _orchestrator  : Optional[QueryOrchestrator]     = None
 _form_analyzer : Optional[FormulationAnalyzer]   = None
+_jur_router    : Optional[JurisdictionRouter]    = None
 
 
 def _get_embeddings() -> HuggingFaceEmbeddings:
@@ -131,9 +135,10 @@ def _get_llm() -> ChatMistralAI:
     global _llm
     if _llm is None:
         _llm = ChatMistralAI(
-            model="mistral-tiny",
+            model="mistral-small-latest",
             temperature=0,
-            api_key=os.getenv("MISTRAL_API_KEY")
+            api_key=os.getenv("MISTRAL_API_KEY"),
+            max_tokens=4096
         )
     return _llm
 
@@ -245,6 +250,13 @@ def _get_form_analyzer() -> FormulationAnalyzer:
             llm=_get_llm(),
         )
     return _form_analyzer
+
+
+def _get_jurisdiction_router() -> JurisdictionRouter:
+    global _jur_router
+    if _jur_router is None:
+        _jur_router = JurisdictionRouter(llm=_get_llm())
+    return _jur_router
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -698,6 +710,8 @@ def patentability_check(req: PatentabilityRequest):
 
 class AskRequest(BaseModel):
     query: str
+    language: Optional[str] = None  # "en" | "hi" | "kn" — overrides detection
+    jurisdiction: Optional[str] = None  # "india" | "international" | "both" | None
 
 
 class FormulationOut(BaseModel):
@@ -724,77 +738,526 @@ class AskCitationOut(BaseModel):
 
 
 class AskResponse(BaseModel):
-    query        : str
-    ip_types     : list[str]
-    primary_ip   : str
-    router_reason: str
-    formulation  : Optional[FormulationOut] = None
-    answer       : str
-    confidence   : str
-    sufficient   : bool
-    citations    : list[AskCitationOut]
-    domains_used : list[str]
-    query_type   : str
+    query                : str
+    ip_types             : list[str]
+    primary_ip           : str
+    router_reason        : str
+    formulation          : Optional[FormulationOut] = None
+    answer               : str
+    confidence           : str
+    sufficient           : bool
+    citations            : list[AskCitationOut]
+    domains_used         : list[str]
+    query_type           : str
+    detected_language    : Optional[str] = None    # "en" | "hi" | "kn" | "unknown"
+    response_language    : Optional[str] = None    # language of the answer
+    original_question    : Optional[str] = None    # original user query
+    normalized_question  : Optional[str] = None    # English version used for processing
+    scope_status         : Optional[str] = None    # in_scope | needs_clarification | out_of_scope | unsafe_or_disallowed
+    scope_reason         : Optional[str] = None
+    downstream_called    : bool = True             # False = Scope short-circuited, no RAG/orchestrator invoked
+    jurisdiction         : Optional[str] = None    # "india" | "international" | "both" | "unknown"
+    jurisdiction_reason  : Optional[str] = None
 
 
 @app.post("/ask", response_model=AskResponse, tags=["phase-5"])
 def ask(req: AskRequest):
     """
-    Phase 5 — Unified routed Q&A.
+    Language Agent + Phase 5 — Unified routed Q&A with language support.
 
-    Automatically detects the IP domain(s) relevant to the query,
-    classifies formulations when present, retrieves domain-filtered
-    evidence, and generates an answer with a domain-specific prompt.
+    PIPELINE (Language Agent runs FIRST):
+      1. Detect language (en, hi, kn, unknown) or use override
+      2. Normalize query → English (for internal processing)
+      3. Run IP routing + retrieval + answer (in English)
+      4. Translate grounded English answer → user language
+      5. Return final response with metadata (detected_language, etc.)
 
-    Supports:
-      - Single-domain queries (patent, trademark, copyright, design, GI, TK)
-      - Multi-domain queries (e.g. patent + trademark, patent + TK)
-      - Formulation classification and TK detection
+    NEVER crashes — on any error, falls back to English with low confidence
+    and a clear user-facing error message.
+
+    Language Support:
+      - Detects Devanagari → hi, Kannada script → kn, Romanized Hindi → hi
+      - Handles mixed Hinglish queries ("Mujhe neem ka patent lena hai")
+      - Preserves Section 3(p), Patents Act, TKDL, PCT, citations, URLs
+      - Unknown / short ambiguous → process in English, mark metadata
     """
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="query must not be empty")
 
-    result = _get_orchestrator().process(req.query.strip())
+    original_query = req.query.strip()
 
-    formulation_out = None
-    if result.get("formulation"):
-        f = result["formulation"]
-        formulation_out = FormulationOut(
-            formulation_type                = f.get("formulation_type", "unknown"),
-            secondary_types                 = f.get("secondary_types", []),
-            ingredients                     = f.get("ingredients", []),
-            biological_resources            = f.get("biological_resources", []),
-            traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
-            tk_systems                      = f.get("tk_systems", []),
-            confidence                      = f.get("confidence", 0.0),
-            notes                           = f.get("notes"),
-        )
+    # ── Default fallback response (built incrementally) ──────────────────
+    # If any step raises, we still have a valid AskResponse to return.
+    lang_code    : str = "en"
+    resp_lang    : str = "en"
+    english_query: str = original_query
+    scope_status : Optional[str] = None
+    scope_reason : Optional[str] = None
+    downstream_called : bool = True
+    result: dict = {
+        "query"        : original_query,
+        "ip_types"     : [],
+        "primary_ip"   : "unknown",
+        "router_reason": "",
+        "formulation"  : None,
+        "answer"       : (
+            "An error occurred while processing your query. "
+            "Please try again or rephrase your question in English, Hindi, or Kannada."
+        ),
+        "confidence"   : "low",
+        "sufficient"   : False,
+        "citations"    : [],
+        "domains_used" : [],
+        "query_type"   : "unknown",
+    }
 
-    return AskResponse(
-        query         = result["query"],
-        ip_types      = result["ip_types"],
-        primary_ip    = result["primary_ip"],
-        router_reason = result.get("router_reason", ""),
-        formulation   = formulation_out,
-        answer        = result["answer"],
-        confidence    = result["confidence"],
-        sufficient    = result["sufficient"],
-        citations     = [
+    try:
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 1 — LANGUAGE DETECTION  (runs FIRST, before all other agents)
+        # ═══════════════════════════════════════════════════════════════════
+        try:
+            lang_result = _get_ml_detector().detect(original_query, override=req.language)
+        except Exception as e:
+            # Detection exception → fallback English
+            from multilingual.schemas import Language, LanguageResult
+            lang_result = LanguageResult(
+                language=Language.ENGLISH, confidence=0.0, method="fallback_exception"
+            )
+
+        lang_code = lang_result.language.value
+        # If unknown, we still process in English; response_language reflects
+        # that the final answer will be English even though we couldn't ID
+        resp_lang = lang_code if lang_code in ("en", "hi", "kn") else "en"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 2 — QUERY NORMALIZATION  (non-English → English for RAG)
+        # ═══════════════════════════════════════════════════════════════════
+        try:
+            translator    = _get_ml_translator()
+            english_query = translator.normalize_query(original_query, lang_result)
+        except Exception as e:
+            # Normalization failed → keep original query (best effort)
+            english_query = original_query
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 3 — SCOPE & GUARDRAIL AGENT  (runs BEFORE IP routing / RAG)
+        # ═══════════════════════════════════════════════════════════════════
+        scope_short_circuited : bool = False
+        scope_short_answer_en : str  = ""
+        try:
+            gr = _get_scope_guard().check(
+                normalized_query=english_query,
+                original_query=original_query,
+            )
+            scope_status = gr.status.value
+            scope_reason = gr.reason
+
+            if gr.status == ScopeStatus.IN_SCOPE:
+                # Continue to downstream pipeline normally
+                downstream_called = True
+            else:
+                # Short-circuit: do not invoke the RAG/orchestrator pipeline
+                downstream_called = False
+                scope_short_circuited = True
+
+                if gr.status == ScopeStatus.NEEDS_CLARIFICATION:
+                    scope_short_answer_en = (
+                        gr.clarification_question
+                        or "Please clarify your question."
+                    )
+                elif gr.status == ScopeStatus.OUT_OF_SCOPE:
+                    scope_short_answer_en = (
+                        gr.user_response
+                        or "This query is outside the supported scope."
+                    )
+                elif gr.status == ScopeStatus.UNSAFE_OR_DISALLOWED:
+                    scope_short_answer_en = (
+                        gr.user_response
+                        or "That request is disallowed. Please describe a safe IP, "
+                           "Ayurveda, traditional knowledge, or ABS question to "
+                           "explore with source evidence."
+                    )
+
+                # Override the result dict with a short-circuit answer.
+                # Note: do NOT run downstream (orchestrator/RAG/formulation)
+                result = {
+                    "query"        : english_query,
+                    "ip_types"     : [],
+                    "primary_ip"   : "unknown",
+                    "router_reason": f"Scope: {gr.status.value} — {gr.reason}",
+                    "formulation"  : None,
+                    "answer"       : scope_short_answer_en,
+                    "confidence"   : "low",
+                    "sufficient"   : True,   # true in the sense we have a direct answer
+                    "citations"    : [],
+                    "domains_used" : [],
+                    "query_type"   : "scope_guardrail",
+                }
+        except Exception as e:
+            # Scope agent exception → proceed as in_scope (best effort, avoid blocking user)
+            scope_status = "in_scope"
+            scope_reason = f"Scope agent errored — defaulting to in_scope: {e!r}"
+            downstream_called = True
+            scope_short_circuited = False
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 4 — JURISDICTION AGENT  (runs AFTER Scope, BEFORE IP routing)
+        # ═══════════════════════════════════════════════════════════════════
+        jurisdiction_status: str = "unknown"
+        jurisdiction_reason: str = ""
+        jurisdiction_override: Optional[str] = req.jurisdiction if hasattr(req, 'jurisdiction') else None
+        try:
+            jur_route = _get_jurisdiction_router().classify(
+                query=english_query,
+                override=jurisdiction_override
+            )
+            jurisdiction_status = jur_route.jurisdiction.value
+            jurisdiction_reason = jur_route.reason
+        except Exception as e:
+            jurisdiction_status = "unknown"
+            jurisdiction_reason = f"Jurisdiction agent errored — defaulting to unknown: {e!r}"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 5 — EXISTING /ask PIPELINE  (IP routing + retrieval + answer)
+        #           (SKIPPED if Scope agent short-circuited)
+        # ═══════════════════════════════════════════════════════════════════
+        if not scope_short_circuited:
+            try:
+                result = _get_orchestrator().process(english_query)
+            except Exception as e:
+                # Downstream pipeline exception — keep fallback result above,
+                # just ensure the query field is the English one.
+                result["query"] = english_query
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 5 — FORMULATION OUT  (if present)
+        # ═══════════════════════════════════════════════════════════════════
+        formulation_out = None
+        try:
+            if not scope_short_circuited and result.get("formulation"):
+                f = result["formulation"]
+                formulation_out = FormulationOut(
+                    formulation_type                = f.get("formulation_type", "unknown"),
+                    secondary_types                 = f.get("secondary_types", []),
+                    ingredients                     = f.get("ingredients", []),
+                    biological_resources            = f.get("biological_resources", []),
+                    traditional_knowledge_indicators= f.get("traditional_knowledge_indicators", []),
+                    tk_systems                      = f.get("tk_systems", []),
+                    confidence                      = f.get("confidence", 0.0),
+                    notes                           = f.get("notes"),
+                )
+        except Exception:
+            formulation_out = None
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 6 — TRANSLATE ANSWER BACK  (English → user language)
+        # ═══════════════════════════════════════════════════════════════════
+        final_answer = result.get("answer", "")
+        try:
+            from multilingual.schemas import Language as Lang
+            target = lang_result.language
+            needs_translation = target in (Lang.HINDI, Lang.KANNADA)
+
+            if needs_translation:
+                from multilingual.schemas import GroundedAnswer, MultilingualCitation
+                # Build structured citations (never translated)
+                ml_citations = [
+                    MultilingualCitation(
+                        document    = c.get("document", ""),
+                        section     = c.get("section"),
+                        subsection  = c.get("subsection"),
+                        page        = c.get("page"),
+                        source      = c.get("source", ""),
+                        jurisdiction= c.get("jurisdiction", "india"),
+                        chunk_id    = c.get("chunk_id", ""),
+                    )
+                    for c in result.get("citations", [])
+                ]
+                answer_obj = GroundedAnswer(
+                    answer_text         = result.get("answer", ""),
+                    citations           = ml_citations,
+                    confidence          = str(result.get("confidence", "low")),
+                    sufficient          = bool(result.get("sufficient", False)),
+                    original_question   = original_query,
+                    normalized_question = english_query,
+                )
+                translated = translator.translate_answer(answer_obj, target)
+                final_answer = translated.translated_text or result.get("answer", "")
+        except Exception as e:
+            # Translation error — keep the English answer we already have
+            final_answer = result.get("answer", "")
+
+    except Exception as top_level:
+        # Catastrophic top-level error → keep the fallback result
+        # (which is already set at the top of the function)
+        import traceback
+        print(f"[/ask] top-level exception: {top_level}")
+        traceback.print_exc()
+        lang_code    = "en"
+        resp_lang    = "en"
+        english_query = original_query
+        scope_status = scope_status or "in_scope"
+        downstream_called = downstream_called if downstream_called is not None else True
+
+    # ── Return a well-formed AskResponse  (guaranteed to succeed) ────────
+    try:
+        citations_out = [
             AskCitationOut(
-                document   = c["document"],
+                document   = c.get("document", ""),
                 chapter    = c.get("chapter"),
                 section    = c.get("section"),
                 subsection = c.get("subsection"),
                 page       = c.get("page"),
-                source     = c["source"],
+                source     = c.get("source", ""),
                 source_url = c.get("source_url"),
                 domain     = c.get("domain"),
-                chunk_id   = c["chunk_id"],
+                chunk_id   = c.get("chunk_id", ""),
             )
             for c in result.get("citations", [])
-        ],
-        domains_used  = result.get("domains_used", []),
-        query_type    = result.get("query_type", "semantic"),
+        ]
+    except Exception:
+        citations_out = []
+
+    return AskResponse(
+        query                = result.get("query", original_query),
+        ip_types             = list(result.get("ip_types", [])),
+        primary_ip           = str(result.get("primary_ip", "unknown")),
+        router_reason        = str(result.get("router_reason", "")),
+        formulation          = formulation_out,
+        answer               = final_answer if final_answer else result.get("answer", ""),
+        confidence           = str(result.get("confidence", "low")),
+        sufficient           = bool(result.get("sufficient", False)),
+        citations            = citations_out,
+        domains_used         = list(result.get("domains_used", [])),
+        query_type           = str(result.get("query_type", "unknown")),
+        detected_language    = lang_code,
+        response_language    = resp_lang,
+        original_question    = original_query,
+        normalized_question  = english_query,
+        scope_status         = scope_status,
+        scope_reason         = scope_reason,
+        downstream_called    = bool(downstream_called),
+        jurisdiction         = jurisdiction_status,
+        jurisdiction_reason  = jurisdiction_reason,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Streaming endpoint for /ask
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def _ask_stream_generator(req: AskRequest) -> AsyncGenerator[str, None]:
+    """Generator function for streaming /ask responses."""
+    if not req.query.strip():
+        yield json.dumps({"error": "query must not be empty"})
+        return
+
+    original_query = req.query.strip()
+
+    # Send initial status
+    yield json.dumps({"type": "status", "message": "Processing your query..."}) + "\n"
+
+    try:
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 1 — LANGUAGE DETECTION
+        # ═══════════════════════════════════════════════════════════════════
+        yield json.dumps({"type": "step", "step": "language_detection", "message": "Detecting language..."}) + "\n"
+        try:
+            lang_result = _get_ml_detector().detect(original_query, override=req.language)
+        except Exception as e:
+            from multilingual.schemas import Language, LanguageResult
+            lang_result = LanguageResult(
+                language=Language.ENGLISH, confidence=0.0, method="fallback_exception"
+            )
+
+        lang_code = lang_result.language.value
+        resp_lang = lang_code if lang_code in ("en", "hi", "kn") else "en"
+
+        yield json.dumps({"type": "language_detected", "language": lang_code, "response_language": resp_lang}) + "\n"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 2 — QUERY NORMALIZATION
+        # ═══════════════════════════════════════════════════════════════════
+        yield json.dumps({"type": "step", "step": "normalization", "message": "Normalizing query..."}) + "\n"
+        try:
+            translator = _get_ml_translator()
+            english_query = translator.normalize_query(original_query, lang_result)
+        except Exception as e:
+            english_query = original_query
+
+        yield json.dumps({"type": "normalized", "normalized_query": english_query}) + "\n"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 3 — SCOPE & GUARDRAIL AGENT
+        # ═══════════════════════════════════════════════════════════════════
+        yield json.dumps({"type": "step", "step": "scope_check", "message": "Checking scope..."}) + "\n"
+        scope_short_circuited = False
+        scope_short_answer_en = ""
+        scope_status = None
+        scope_reason = None
+        downstream_called = True
+
+        try:
+            gr = _get_scope_guard().check(
+                normalized_query=english_query,
+                original_query=original_query,
+            )
+            scope_status = gr.status.value
+            scope_reason = gr.reason
+
+            if gr.status == ScopeStatus.IN_SCOPE:
+                downstream_called = True
+            else:
+                downstream_called = False
+                scope_short_circuited = True
+                scope_short_answer_en = gr.short_answer_en
+        except Exception as e:
+            scope_status = "in_scope"
+            scope_reason = f"Scope agent errored — defaulting to in_scope: {e!r}"
+            downstream_called = True
+            scope_short_circuited = False
+
+        yield json.dumps({"type": "scope_result", "status": scope_status, "reason": scope_reason, "downstream_called": downstream_called}) + "\n"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 4 — JURISDICTION AGENT
+        # ═══════════════════════════════════════════════════════════════════
+        yield json.dumps({"type": "step", "step": "jurisdiction", "message": "Determining jurisdiction..."}) + "\n"
+        jurisdiction_status = "unknown"
+        jurisdiction_reason = ""
+        jurisdiction_override = req.jurisdiction if hasattr(req, 'jurisdiction') else None
+        try:
+            jur_route = _get_jurisdiction_router().classify(
+                query=english_query,
+                override=jurisdiction_override
+            )
+            jurisdiction_status = jur_route.jurisdiction.value
+            jurisdiction_reason = jur_route.reason
+        except Exception as e:
+            jurisdiction_status = "unknown"
+            jurisdiction_reason = f"Jurisdiction agent errored — defaulting to unknown: {e!r}"
+
+        yield json.dumps({"type": "jurisdiction_result", "jurisdiction": jurisdiction_status, "reason": jurisdiction_reason}) + "\n"
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 5 — EXISTING /ask PIPELINE
+        # ═══════════════════════════════════════════════════════════════════
+        result = {
+            "query": original_query,
+            "ip_types": [],
+            "primary_ip": "unknown",
+            "router_reason": "",
+            "formulation": None,
+            "answer": "",
+            "confidence": "low",
+            "sufficient": False,
+            "citations": [],
+            "domains_used": [],
+            "query_type": "unknown",
+        }
+
+        if not scope_short_circuited:
+            yield json.dumps({"type": "step", "step": "retrieval", "message": "Retrieving relevant documents..."}) + "\n"
+            try:
+                result = _get_orchestrator().process(english_query)
+            except Exception as e:
+                result["query"] = english_query
+        else:
+            result["query"] = english_query
+            result["answer"] = scope_short_answer_en
+            result["confidence"] = "low"
+            result["sufficient"] = True
+
+        # ═══════════════════════════════════════════════════════════════════
+        # STEP 6 — TRANSLATE ANSWER BACK
+        # ═══════════════════════════════════════════════════════════════════
+        yield json.dumps({"type": "step", "step": "translation", "message": "Translating response..."}) + "\n"
+        final_answer = result.get("answer", "")
+        try:
+            from multilingual.schemas import Language as Lang
+            target = lang_result.language
+            needs_translation = target in (Lang.HINDI, Lang.KANNADA)
+
+            if needs_translation:
+                from multilingual.schemas import GroundedAnswer, MultilingualCitation
+                ml_citations = [
+                    MultilingualCitation(
+                        document=c.get("document", ""),
+                        section=c.get("section"),
+                        subsection=c.get("subsection"),
+                        page=c.get("page"),
+                        source=c.get("source", ""),
+                        jurisdiction=c.get("jurisdiction", "india"),
+                        chunk_id=c.get("chunk_id", ""),
+                    )
+                    for c in result.get("citations", [])
+                ]
+                answer_obj = GroundedAnswer(
+                    answer_en=result.get("answer", ""),
+                    citations=ml_citations,
+                    confidence=result.get("confidence", "low"),
+                )
+                translated = _get_ml_translator().translate_answer(answer_obj, target)
+                final_answer = translated.answer
+        except Exception:
+            pass
+
+        # Stream the answer in chunks
+        yield json.dumps({"type": "answer_start"}) + "\n"
+        answer_text = final_answer if final_answer else result.get("answer", "")
+        
+        # Stream answer in chunks of 50 characters
+        for i in range(0, len(answer_text), 50):
+            chunk = answer_text[i:i+50]
+            yield json.dumps({"type": "answer_chunk", "content": chunk}) + "\n"
+        
+        yield json.dumps({"type": "answer_end"}) + "\n"
+
+        # Send final response
+        final_response = {
+            "type": "complete",
+            "query": result.get("query", original_query),
+            "ip_types": list(result.get("ip_types", [])),
+            "primary_ip": str(result.get("primary_ip", "unknown")),
+            "router_reason": str(result.get("router_reason", "")),
+            "answer": final_answer if final_answer else result.get("answer", ""),
+            "confidence": str(result.get("confidence", "low")),
+            "sufficient": bool(result.get("sufficient", False)),
+            "citations": result.get("citations", []),
+            "domains_used": list(result.get("domains_used", [])),
+            "query_type": str(result.get("query_type", "unknown")),
+            "detected_language": lang_code,
+            "response_language": resp_lang,
+            "original_question": original_query,
+            "normalized_question": english_query,
+            "scope_status": scope_status,
+            "scope_reason": scope_reason,
+            "downstream_called": bool(downstream_called),
+            "jurisdiction": jurisdiction_status,
+            "jurisdiction_reason": jurisdiction_reason,
+        }
+        yield json.dumps(final_response) + "\n"
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        yield json.dumps({"type": "error", "error": str(e)}) + "\n"
+
+
+@app.post("/ask/stream", tags=["phase-5"])
+async def ask_stream(req: AskRequest):
+    """
+    Streaming version of /ask endpoint.
+    Returns Server-Sent Events (SSE) stream of the response generation.
+    """
+    return StreamingResponse(
+        _ask_stream_generator(req),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        }
     )
 
 
@@ -1172,7 +1635,8 @@ def multilingual_query(req: MultilingualQueryRequest):
 # ─────────────────────────────────────────────────────────────────────────────
 
 from guardrails.disclaimer  import add_disclaimer, get_disclaimer
-from guardrails.scope       import ScopeChecker, Scope
+from guardrails.scope       import (ScopeChecker, Scope,
+                                    ScopeGuard, ScopeStatus, GuardrailResult)
 from guardrails.confidence  import score_from_chunks, confidence_band, evidence_is_sufficient
 from guardrails.pipeline    import SafetyPipeline, SafetyResult, INJECTION_GUARD_PROMPT
 from escalation.facilitator import (
@@ -1184,6 +1648,7 @@ from escalation.facilitator import (
 from audit.logger import get_logger
 
 _scope_checker: Optional[ScopeChecker]  = None
+_scope_guard  : Optional[ScopeGuard]    = None
 _safety_pipeline: Optional[SafetyPipeline] = None
 
 
@@ -1192,6 +1657,13 @@ def _get_scope_checker() -> ScopeChecker:
     if _scope_checker is None:
         _scope_checker = ScopeChecker(llm=_get_llm())
     return _scope_checker
+
+
+def _get_scope_guard() -> ScopeGuard:
+    global _scope_guard
+    if _scope_guard is None:
+        _scope_guard = ScopeGuard()
+    return _scope_guard
 
 
 def _get_safety_pipeline() -> SafetyPipeline:

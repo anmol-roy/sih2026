@@ -4,7 +4,8 @@ langchain-community==0.3.23
 langchain-core==0.3.61
 langchain-text-splitters==0.3.8
 langchain-qdrant==0.2.0
-langchain-huggingface==0.1.2
+langchain-huggingface==1.2.2
+langchain-mistralai==1.1.6
 
 # Vector store
 qdrant-client==1.13.3

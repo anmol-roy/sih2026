@@ -1,0 +1,37 @@
+{
+  "total": 10,
+  "passed": 1,
+  "failed": 9,
+  "tests": [
+    {
+      "name": "TEST 2 \u2014 Indian Law",
+      "input": "What does Indian patent law say about traditional knowledge?",
+      "expected": "india",
+      "actual": "unknown",
+      "status": "FAIL",
+      "jurisdiction_reason": "",
+      "scope_status": "in_scope",
+      "detected_language": "en"
+    },
+    {
+      "name": "TEST 4 \u2014 PCT",
+      "input": "How does the PCT process work for an invention?",
+      "expected": "international",
+      "actual": "unknown",
+      "status": "FAIL",
+      "jurisdiction_reason": "",
+      "scope_status": "in_scope",
+      "detected_language": "en"
+    },
+    {
+      "name": "TEST 7 \u2014 Unclear",
+      "input": "Can I patent my Ayurvedic formulation?",
+      "expected": "unknown",
+      "actual": "unknown",
+      "status": "PASS",
+      "jurisdiction_reason": "",
+      "scope_status": "in_scope",
+      "detected_language": "en"
+    }
+  ]
+}

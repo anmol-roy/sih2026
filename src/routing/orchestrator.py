@@ -75,10 +75,13 @@ def _build_citations(chunks: list[LegalChunk]) -> list[dict]:
     seen: set[str] = set()
     out = []
     for chunk in chunks:
-        if chunk.chunk_id in seen:
-            continue
-        seen.add(chunk.chunk_id)
         c = chunk.citation()
+        # Create a composite key for deduplication: document + section + subsection
+        # This prevents showing the same legal provision multiple times even if from different chunks
+        dedup_key = f"{c['document']}|{c.get('section', '')}|{c.get('subsection', '')}"
+        if dedup_key in seen:
+            continue
+        seen.add(dedup_key)
         out.append({
             "document"    : c["document"],
             "chapter"     : c.get("chapter")    or None,
