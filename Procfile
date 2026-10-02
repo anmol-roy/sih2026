@@ -1,1 +1,1 @@
-web: cd /opt/render/project/src && bash /opt/render/project/src/start.sh
+web: uvicorn src.api.main:app --host 0.0.0.0 --port $PORT
