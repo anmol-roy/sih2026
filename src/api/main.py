@@ -113,6 +113,26 @@ async def custom_exception_handler(request: Request, exc: Exception):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Explicit CORS preflight handlers for all endpoints
+# ─────────────────────────────────────────────────────────────────────────────
+
+@app.options("/{full_path:path}")
+async def preflight_handler(full_path: str):
+    """Handle CORS preflight (OPTIONS) requests for all paths."""
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=200,
+        content={},
+        headers={
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
+            "Access-Control-Max-Age": "86400",
+        },
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Lazy-loaded singletons
 # ─────────────────────────────────────────────────────────────────────────────
 
